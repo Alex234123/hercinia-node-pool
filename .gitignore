@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+mihomo
+mihomo.gz
+test_run_config.yaml
+dist/
+.DS_Store
