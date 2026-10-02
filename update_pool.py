@@ -380,7 +380,9 @@ def build_final_subscription(alive_nodes_with_delay: list):
       --text-muted: #94a3b8;
       --border: #334155;
       --success: #10b981;
+      --warning: #f59e0b;
       --accent: #38bdf8;
+      --danger: #ef4444;
     }}
     * {{ box-sizing: border-box; margin: 0; padding: 0; }}
     body {{
@@ -394,12 +396,12 @@ def build_final_subscription(alive_nodes_with_delay: list):
       padding: 40px 20px;
     }}
     .container {{
-      max-width: 800px;
+      max-width: 820px;
       width: 100%;
     }}
     .header {{
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }}
     .header h1 {{
       font-size: 2.2rem;
@@ -416,7 +418,7 @@ def build_final_subscription(alive_nodes_with_delay: list):
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }}
     .stat-card {{
       background: var(--card);
@@ -439,14 +441,52 @@ def build_final_subscription(alive_nodes_with_delay: list):
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 28px;
+      padding: 24px 28px;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-      margin-bottom: 24px;
+      margin-bottom: 20px;
+    }}
+    .action-header {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }}
+    .status-pill {{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }}
+    .status-pill.running {{
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--warning);
+      border-color: rgba(245, 158, 11, 0.3);
+    }}
+    .status-dot {{
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }}
+    .status-pill.running .status-dot {{
+      animation: pulse 1.5s infinite;
+    }}
+    @keyframes pulse {{
+      0%, 100% {{ opacity: 1; transform: scale(1); }}
+      50% {{ opacity: 0.4; transform: scale(1.2); }}
     }}
     .sub-box {{
       display: flex;
       gap: 10px;
-      margin: 18px 0;
+      margin: 16px 0;
       background: #0f172a;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -471,32 +511,94 @@ def build_final_subscription(alive_nodes_with_delay: list):
       cursor: pointer;
       font-weight: 600;
       transition: all 0.2s;
+      font-size: 0.95rem;
     }}
     .btn:hover {{
       background: var(--primary-hover);
+    }}
+    .btn:disabled {{
+      opacity: 0.6;
+      cursor: not-allowed;
+    }}
+    .btn-update {{
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }}
+    .btn-update:hover {{
+      background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
     }}
     .btn-group {{
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      margin-top: 16px;
+      margin-top: 14px;
     }}
-    .feature-badge {{
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+    .btn-secondary {{
+      background: #334155;
+      text-decoration: none;
+    }}
+    .btn-secondary:hover {{
+      background: #475569;
+    }}
+    .btn-outline {{
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }}
+    .btn-outline:hover {{
+      background: #1e293b;
+      color: var(--text);
+    }}
+    .alert-box {{
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      display: none;
+    }}
+    .alert-success {{
       background: rgba(16, 185, 129, 0.15);
-      color: var(--success);
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      margin-top: 10px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }}
+    .alert-info {{
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #7dd3fc;
+    }}
+    .alert-error {{
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }}
+    /* Modal Styles */
+    .modal-backdrop {{
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 20px;
+    }}
+    .modal-content {{
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      max-width: 500px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.4);
     }}
     .footer {{
       text-align: center;
       color: var(--text-muted);
       font-size: 0.85rem;
-      margin-top: 30px;
+      margin-top: 24px;
     }}
   </style>
 </head>
@@ -505,24 +607,58 @@ def build_final_subscription(alive_nodes_with_delay: list):
     <div class="header">
       <h1>⚡ Hercinia 自动化高优节点池</h1>
       <p>全网 17 处核心公共节点源 · GitHub Actions 24/7 云端智能测速筛选 · 专属稳定加速</p>
-      <div class="feature-badge">● 云端自动每 6 小时测速清洗已生效</div>
     </div>
 
+    <!-- 实时状态面板 -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-val">{len(final_proxies)}</div>
+        <div id="statAliveCount" class="stat-val">{len(final_proxies)}</div>
         <div class="stat-label">当前存活低延迟节点</div>
       </div>
       <div class="stat-card">
-        <div class="stat-val">{avg_delay} ms</div>
+        <div id="statAvgDelay" class="stat-val">{avg_delay} ms</div>
         <div class="stat-label">平均握手延迟</div>
       </div>
       <div class="stat-card">
-        <div class="stat-val" style="font-size: 1.15rem; line-height: 2.2rem; color: #a78bfa;">{cst_time}</div>
+        <div id="statUpdatedAt" class="stat-val" style="font-size: 1.15rem; line-height: 2.2rem; color: #a78bfa;">{cst_time}</div>
         <div class="stat-label">最近更新时间 (北京时间)</div>
       </div>
     </div>
 
+    <!-- 手动更新与云端调度控制卡片 -->
+    <div class="main-card">
+      <div class="action-header">
+        <div>
+          <h3 style="margin-bottom: 4px;">⚡ 云端自动维护与即时刷新</h3>
+          <p style="color: var(--text-muted); font-size: 0.88rem;">
+            默认每 6 小时自动爬取并清洗测速。若需获取当前最新节点，可随时点击下方按钮立即触发：
+          </p>
+        </div>
+        <div id="statusPill" class="status-pill">
+          <span class="status-dot"></span>
+          <span id="statusPillText">云端就绪</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+        <button id="btnTrigger" class="btn btn-update" onclick="handleManualUpdate()">
+          <span id="btnIcon">🔄</span>
+          <span id="btnText">立即手动触发云端更新</span>
+        </button>
+
+        <a href="https://github.com/Alex234123/hercinia-node-pool/actions/workflows/update.yml" target="_blank" class="btn btn-secondary" style="font-size: 0.9rem;">
+          ↗ GitHub Actions 后台
+        </a>
+
+        <button class="btn btn-outline" style="font-size: 0.85rem;" onclick="openTokenModal()">
+          🔑 授权码设置
+        </button>
+      </div>
+
+      <div id="alertMsg" class="alert-box"></div>
+    </div>
+
+    <!-- 订阅地址与导入卡片 -->
     <div class="main-card">
       <h3 style="margin-bottom: 8px;">🔗 永久专属订阅地址</h3>
       <p style="color: var(--text-muted); font-size: 0.9rem;">
@@ -535,7 +671,7 @@ def build_final_subscription(alive_nodes_with_delay: list):
       </div>
 
       <div class="btn-group">
-        <a href="https://{CUSTOM_DOMAIN}/clash.yaml" class="btn" style="text-decoration: none; background: #334155;">直接下载 YAML 配置</a>
+        <a href="https://{CUSTOM_DOMAIN}/clash.yaml" class="btn btn-secondary">直接下载 YAML 配置</a>
         <a href="clash://install-config?url=https://{CUSTOM_DOMAIN}/clash.yaml" class="btn" style="text-decoration: none; background: #0284c7;">一键导入 Clash</a>
       </div>
     </div>
@@ -545,7 +681,31 @@ def build_final_subscription(alive_nodes_with_delay: list):
     </div>
   </div>
 
+  <!-- Token 配置模态框 -->
+  <div id="tokenModal" class="modal-backdrop">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 10px;">🔐 设置 GitHub 授权码 (PAT)</h3>
+      <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 14px;">
+        为了安全，授权码将<strong>仅保存在您当前浏览器的 LocalStorage 中</strong>，用于直接向 GitHub 发送工作流调度请求。<br>
+        如果您已经在 GitHub 网页端登录，也可以直接点击主页面的“GitHub Actions 后台”手动运行工作流。
+      </p>
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">GitHub Personal Access Token (需包含 repo 或 workflow 权限):</label>
+        <input type="password" id="tokenInput" class="sub-input" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px;" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-secondary" onclick="closeTokenModal()">取消</button>
+        <button class="btn" onclick="saveTokenAndTrigger()">保存并立即更新</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    const OWNER = 'Alex234123';
+    const REPO = 'hercinia-node-pool';
+    const WORKFLOW_ID = 'update.yml';
+    let pollInterval = null;
+
     function copySub() {{
       const inp = document.getElementById('subUrl');
       inp.select();
@@ -553,6 +713,152 @@ def build_final_subscription(alive_nodes_with_delay: list):
         alert('✓ 订阅地址已复制到剪贴板！可以直接粘贴到客户端中添加订阅。');
       }});
     }}
+
+    function showAlert(msg, type = 'info') {{
+      const box = document.getElementById('alertMsg');
+      box.className = 'alert-box alert-' + type;
+      box.innerHTML = msg;
+      box.style.display = 'block';
+    }}
+
+    function hideAlert() {{
+      document.getElementById('alertMsg').style.display = 'none';
+    }}
+
+    function openTokenModal() {{
+      const saved = localStorage.getItem('gh_token') || '';
+      document.getElementById('tokenInput').value = saved;
+      document.getElementById('tokenModal').style.display = 'flex';
+    }}
+
+    function closeTokenModal() {{
+      document.getElementById('tokenModal').style.display = 'none';
+    }}
+
+    function saveTokenAndTrigger() {{
+      const token = document.getElementById('tokenInput').value.trim();
+      if (!token) {{
+        alert('请输入有效的 GitHub 访问令牌 (Token)');
+        return;
+      }}
+      localStorage.setItem('gh_token', token);
+      closeTokenModal();
+      handleManualUpdate();
+    }}
+
+    async function handleManualUpdate() {{
+      const token = localStorage.getItem('gh_token');
+      if (!token) {{
+        openTokenModal();
+        return;
+      }}
+
+      const btn = document.getElementById('btnTrigger');
+      const btnIcon = document.getElementById('btnIcon');
+      const btnText = document.getElementById('btnText');
+      btn.disabled = true;
+      btnIcon.textContent = '⏳';
+      btnText.textContent = '正在下发云端指令...';
+      showAlert('正在连接 GitHub Actions 触发更新工作流...', 'info');
+
+      try {{
+        const res = await fetch(`https://api.github.com/repos/${{OWNER}}/${{REPO}}/actions/workflows/${{WORKFLOW_ID}}/dispatches`, {{
+          method: 'POST',
+          headers: {{
+            'Authorization': `token ${{token}}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          }},
+          body: JSON.stringify({{ ref: 'main' }})
+        }});
+
+        if (res.status === 204 || res.status === 200) {{
+          showAlert('✓ 成功下发更新任务！GitHub Actions 云端正在全网抓取并高并发测速...', 'info');
+          btnText.textContent = '云端正在测速中...';
+          startPollingStatus();
+        }} else if (res.status === 401 || res.status === 403) {{
+          showAlert('✗ 授权失败 (401/403)：当前保存的 GitHub Token 无效或已过期，请重新设置。', 'error');
+          btn.disabled = false;
+          btnIcon.textContent = '🔄';
+          btnText.textContent = '立即手动触发云端更新';
+          openTokenModal();
+        }} else {{
+          const err = await res.json().catch(() => ({{}}));
+          showAlert(`✗ 触发失败 (${{res.status}})：${{err.message || '未知错误'}}`, 'error');
+          btn.disabled = false;
+          btnIcon.textContent = '🔄';
+          btnText.textContent = '立即手动触发云端更新';
+        }}
+      }} catch (e) {{
+        showAlert(`✗ 网络连接错误：${{e.message}}`, 'error');
+        btn.disabled = false;
+        btnIcon.textContent = '🔄';
+        btnText.textContent = '立即手动触发云端更新';
+      }}
+    }}
+
+    async function checkLiveStatus() {{
+      try {{
+        const res = await fetch(`https://api.github.com/repos/${{OWNER}}/${{REPO}}/actions/runs?per_page=1`, {{
+          cache: 'no-store'
+        }});
+        if (!res.ok) return;
+        const data = await res.json();
+        const run = data.workflow_runs && data.workflow_runs[0];
+        if (!run) return;
+
+        const pill = document.getElementById('statusPill');
+        const pillText = document.getElementById('statusPillText');
+        const btn = document.getElementById('btnTrigger');
+        const btnIcon = document.getElementById('btnIcon');
+        const btnText = document.getElementById('btnText');
+
+        if (run.status === 'in_progress' || run.status === 'queued') {{
+          pill.className = 'status-pill running';
+          pillText.textContent = `云端测速中 (#${{run.run_number}})`;
+          btn.disabled = true;
+          btnIcon.textContent = '⏳';
+          btnText.textContent = `云端测速执行中 (#${{run.run_number}})...`;
+        }} else {{
+          pill.className = 'status-pill';
+          pillText.textContent = '云端就绪';
+          btn.disabled = false;
+          btnIcon.textContent = '🔄';
+          btnText.textContent = '立即手动触发云端更新';
+
+          // 若刚完成，拉取最新统计
+          if (pollInterval) {{
+            clearInterval(pollInterval);
+            pollInterval = null;
+            showAlert('🎉 云端测速与发布已全部完成！最新节点已同步就绪。', 'success');
+            refreshStats();
+          }}
+        }}
+      }} catch (e) {{}}
+    }}
+
+    function startPollingStatus() {{
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(checkLiveStatus, 4000);
+      checkLiveStatus();
+    }}
+
+    async function refreshStats() {{
+      try {{
+        const res = await fetch(`stats.json?_t=${{Date.now()}}`);
+        if (res.ok) {{
+          const data = await res.json();
+          if (data.total_alive_nodes) {{
+            document.getElementById('statAliveCount').textContent = data.total_alive_nodes;
+            document.getElementById('statAvgDelay').textContent = data.average_delay_ms + ' ms';
+            document.getElementById('statUpdatedAt').textContent = data.updated_at;
+          }}
+        }}
+      }} catch (e) {{}}
+    }}
+
+    // 初始化检查状态
+    checkLiveStatus();
   </script>
 </body>
 </html>"""
