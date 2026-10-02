@@ -9,14 +9,12 @@ import os
 import sys
 import re
 import json
+import time
 import base64
-import gzip
-import shutil
 import asyncio
 import urllib.parse
 from datetime import datetime, timezone, timedelta
 import aiohttp
-import requests
 import yaml
 
 SOURCES = [
@@ -97,7 +95,6 @@ async def fetch_all_sources() -> list:
 
 def extract_proxies_from_content(content: str) -> list:
     text = decode_base64_safely(content)
-    # Fix unquoted short-id
     text = re.sub(r"(short-id:\s*)([0-9a-fA-F]+)", r"\1'\2'", text)
 
     proxies = []
@@ -117,7 +114,7 @@ def extract_proxies_from_content(content: str) -> list:
     lines = text.splitlines()
     in_proxies = False
     cur_block = []
-    
+
     def parse_block(b_lines):
         block_text = "\n".join(b_lines)
         try:
@@ -128,7 +125,6 @@ def extract_proxies_from_content(content: str) -> list:
                 return parsed
         except Exception:
             pass
-        # Fallback to key-value regex extraction
         item = {}
         for line in b_lines:
             m = re.match(r"^\s*-\s*([^:]+):\s*(.*)$", line)
@@ -174,146 +170,84 @@ def extract_proxies_from_content(content: str) -> list:
     return proxies
 
 
+def sanitize_node(node: dict) -> dict:
+    clean = {}
+    for k, v in node.items():
+        if k == "port":
+            try:
+                clean["port"] = int(v)
+            except Exception:
+                return None
+        elif isinstance(v, (str, int, float, bool, list, dict)):
+            clean[k] = v
+    if not clean.get("server") or not clean.get("type") or not clean.get("port"):
+        return None
+    return clean
+
+
 def deduplicate_nodes(proxies: list) -> list:
     seen = set()
     unique = []
     for p in proxies:
         if not isinstance(p, dict):
             continue
-        server = str(p.get("server", "")).strip()
-        port = str(p.get("port", "")).strip()
-        ptype = str(p.get("type", "")).strip().lower()
+        clean = sanitize_node(p)
+        if not clean:
+            continue
+        server = str(clean.get("server", "")).strip()
+        port = str(clean.get("port", "")).strip()
+        ptype = str(clean.get("type", "")).strip().lower()
         if not server or not port or not ptype:
             continue
         if server in ("127.0.0.1", "localhost", "0.0.0.0") or server.startswith("192.168."):
             continue
-        secret = str(p.get("uuid") or p.get("password") or p.get("name") or "")
+        secret = str(clean.get("uuid") or clean.get("password") or clean.get("name") or "")
         key = f"{ptype}|{server.lower()}:{port}|{secret}"
         if key not in seen:
             seen.add(key)
-            unique.append(p)
+            unique.append(clean)
     return unique
 
 
-def ensure_mihomo_binary():
-    bin_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mihomo")
-    if os.path.isfile(bin_path) and os.access(bin_path, os.X_OK):
-        return bin_path
-
-    print("[Mihomo] Downloading mihomo core for linux-amd64...")
-    url = "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.2/mihomo-linux-amd64-v1.19.2.gz"
-    gz_path = bin_path + ".gz"
-    try:
-        resp = requests.get(url, timeout=30, stream=True)
-        if resp.status_code == 200:
-            with open(gz_path, "wb") as f:
-                shutil.copyfileobj(resp.raw, f)
-            with gzip.open(gz_path, "rb") as f_in:
-                with open(bin_path, "wb") as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-            os.remove(gz_path)
-            os.chmod(bin_path, 0o755)
-            print("[Mihomo] Core successfully installed and permissions set.")
-            return bin_path
-    except Exception as e:
-        print(f"[Mihomo] Failed to download mihomo: {e}")
-    return None
-
-
-async def benchmark_nodes_with_mihomo(nodes: list, mihomo_bin: str) -> list:
-    """
-    Launches headless mihomo process, tests delay of all candidate nodes via REST API,
-    and returns list of (node, delay_ms) sorted by delay.
-    """
-    test_port = 19090
-    test_mixed = 17890
-    
-    # Assign unique names to test nodes
-    test_nodes = []
-    name_to_node = {}
-    for i, n in enumerate(nodes):
-        name = f"TestNode_{i+1:04d}"
-        n_copy = dict(n)
-        n_copy["name"] = name
-        test_nodes.append(n_copy)
-        name_to_node[name] = n
-
-    config = {
-        "mixed-port": test_mixed,
-        "allow-lan": False,
-        "mode": "rule",
-        "log-level": "silent",
-        "external-controller": f"127.0.0.1:{test_port}",
-        "secret": "",
-        "proxies": test_nodes
-    }
-
-    cfg_file = "test_run_config.yaml"
-    with open(cfg_file, "w", encoding="utf-8") as f:
-        yaml.dump(config, f, allow_unicode=True)
-
-    print(f"[Benchmark] Spawning headless mihomo process with {len(test_nodes)} candidate nodes...")
-    proc = await asyncio.create_subprocess_exec(
-        mihomo_bin, "-f", cfg_file, "-d", ".",
-        stdout=asyncio.subprocess.DEVNULL,
-        stderr=asyncio.subprocess.DEVNULL
-    )
-
-    # Wait for controller API to respond
-    controller_url = f"http://127.0.0.1:{test_port}"
-    api_ready = False
-    for _ in range(30):
-        await asyncio.sleep(0.3)
+async def benchmark_node_tcp(node: dict, sem: asyncio.Semaphore, timeout: float = 2.0):
+    async with sem:
+        server = str(node.get("server", "")).strip()
         try:
-            async with aiohttp.ClientSession() as s:
-                async with s.get(f"{controller_url}/version", timeout=aiohttp.ClientTimeout(total=1)) as r:
-                    if r.status == 200:
-                        api_ready = True
-                        break
+            port = int(node.get("port"))
         except Exception:
-            pass
+            return None
 
-    if not api_ready:
-        print("[Benchmark Error] Mihomo controller failed to start. Falling back to unbenchmarked pool.")
-        proc.kill()
-        return [(n, 999) for n in nodes]
-
-    print("[Benchmark] Controller ready! Starting concurrent latency test across all nodes...")
-    tested_alive = []
-    test_target = "https://cp.cloudflare.com/generate_204"
-    sem = asyncio.Semaphore(50)  # 50 concurrent requests
-
-    async def test_single_node(session, name, original_node):
-        async with sem:
-            encoded_name = urllib.parse.quote(name)
-            url = f"{controller_url}/proxies/{encoded_name}/delay?timeout=2600&url={test_target}"
+        # Resolve domain and test TCP handshake delay
+        t0 = time.perf_counter()
+        try:
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(server, port),
+                timeout=timeout
+            )
+            t1 = time.perf_counter()
+            delay_ms = int((t1 - t0) * 1000)
+            writer.close()
             try:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=3.0)) as resp:
-                    if resp.status == 200:
-                        res = await resp.json()
-                        delay = res.get("delay", 0)
-                        if 0 < delay <= 2500:
-                            tested_alive.append((original_node, delay))
+                await writer.wait_closed()
             except Exception:
                 pass
+            if 0 < delay_ms <= 2000:
+                return (node, delay_ms)
+        except Exception:
+            pass
+        return None
 
-    async with aiohttp.ClientSession() as session:
-        tasks = [test_single_node(session, n["name"], name_to_node[n["name"]]) for n in test_nodes]
-        await asyncio.gather(*tasks)
 
-    # Clean up mihomo process
-    try:
-        proc.terminate()
-        await proc.wait()
-    except Exception:
-        proc.kill()
-    if os.path.exists(cfg_file):
-        os.remove(cfg_file)
+async def benchmark_all_nodes(nodes: list) -> list:
+    print(f"[Benchmark] Testing TCP handshake & alive latency across {len(nodes)} candidate nodes...")
+    sem = asyncio.Semaphore(150)  # 150 concurrent sockets
+    tasks = [benchmark_node_tcp(n, sem, timeout=2.0) for n in nodes]
+    results = await asyncio.gather(*tasks)
 
-    # Sort alive nodes by delay ascending (lowest latency first!)
-    tested_alive.sort(key=lambda x: x[1])
-    print(f"[Benchmark] Tested {len(nodes)} candidate nodes -> {len(tested_alive)} ALIVE & low-latency nodes verified!")
-    return tested_alive
+    alive = [r for r in results if r is not None]
+    alive.sort(key=lambda x: x[1])  # Sort by latency ascending
+    print(f"[Benchmark] Completed! {len(alive)} out of {len(nodes)} nodes verified ALIVE & reachable!")
+    return alive
 
 
 def build_final_subscription(alive_nodes_with_delay: list):
@@ -581,7 +515,7 @@ def build_final_subscription(alive_nodes_with_delay: list):
       </div>
       <div class="stat-card">
         <div class="stat-val">{avg_delay} ms</div>
-        <div class="stat-label">平均延迟 (Cloudflare 204)</div>
+        <div class="stat-label">平均握手延迟</div>
       </div>
       <div class="stat-card">
         <div class="stat-val" style="font-size: 1.15rem; line-height: 2.2rem; color: #a78bfa;">{cst_time}</div>
@@ -654,14 +588,8 @@ async def main():
         print("[Error] No candidate nodes found! Aborting.")
         sys.exit(1)
 
-    # 3. Headless Mihomo Benchmark
-    mihomo_bin = ensure_mihomo_binary()
-    if mihomo_bin:
-        alive_nodes = await benchmark_nodes_with_mihomo(unique_nodes, mihomo_bin)
-    else:
-        print("[Warning] Mihomo core not available, writing unbenchmarked pool.")
-        alive_nodes = [(n, 100) for n in unique_nodes]
-
+    # 3. High-concurrency TCP benchmark
+    alive_nodes = await benchmark_all_nodes(unique_nodes)
     if not alive_nodes:
         print("[Warning] No node passed latency test, saving top unique candidate nodes.")
         alive_nodes = [(n, 999) for n in unique_nodes[:200]]
