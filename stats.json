@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-10-03 11:09:24",
-  "total_alive_nodes": 669,
-  "average_delay_ms": 192,
+  "updated_at": "2026-10-03 18:54:02",
+  "total_alive_nodes": 695,
+  "average_delay_ms": 219,
   "custom_domain": "sub.jiajinfengherciniaxa.kdns.fr",
   "subscription_url": "https://sub.jiajinfengherciniaxa.kdns.fr/clash.yaml"
 }
