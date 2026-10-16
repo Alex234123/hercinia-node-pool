@@ -1,1712 +1,498 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark"><head>
+<html lang="zh-CN">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hercinia Network | 极客边缘节点云池 &amp; 智能机场中枢</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&amp;family=Roboto+Mono:wght@400;500;600&amp;family=Roboto:wght@300;400;500;700&amp;display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-
+  <title>Hercinia 自动化高优节点池 | 24/7 智能云测速</title>
   <style>
     :root {
-      --bg: #1b191e;
-      --surface-container: #26242a;
-      --surface-container-high: #302d33;
-      --surface-container-highest: #3b383e;
-      --primary: #cebff0;
-      --primary-hover: #bda8eb;
-      --on-primary: #352857;
-      --secondary: #cbc3d7;
-      --outline: #948e9c;
-      --outline-variant: #494551;
-      --text: #e6e1e6;
-      --text-muted: #958ea0;
-      --success: #9ed08a;
-      --warning: #ecc16c;
-      --danger: #ecb4b0;
-      --accent: #cebff0;
-      --card-radius: 20px;
-      --pill-radius: 9999px;
-      --font-serif: "Lora", "Songti SC", "Noto Serif SC", serif;
-      --font-sans: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
-      --font-mono: "Roboto Mono", monospace;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --accent: #38bdf8;
+      --danger: #ef4444;
     }
-
-    [data-theme="light"] {
-      --bg: #fdf7fe;
-      --surface-container: #f4eef9;
-      --surface-container-high: #ede6f3;
-      --surface-container-highest: #e6dfec;
-      --primary: #685496;
-      --primary-hover: #584485;
-      --on-primary: #ffffff;
-      --secondary: #625b71;
-      --outline: #79747e;
-      --outline-variant: #cac4d0;
-      --text: #1d1a22;
-      --text-muted: #6f677a;
-      --success: #2e7d32;
-      --warning: #b26a00;
-      --danger: #ba1a1a;
-      --accent: #685496;
-    }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      font-family: var(--font-sans);
-      background-color: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
       color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-      transition: background-color 0.3s ease, color 0.3s ease;
-      background-image: radial-gradient(rgba(206, 191, 240, 0.04) 1px, transparent 1px);
-      background-size: 24px 24px;
+      padding: 40px 20px;
     }
-
-    /* Top Navigation App Bar */
-    .app-bar {
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      background: rgba(27, 25, 30, 0.85);
-      border-bottom: 1px solid var(--outline-variant);
-      padding: 12px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: background 0.3s ease;
-    }
-    [data-theme="light"] .app-bar {
-      background: rgba(253, 247, 254, 0.85);
-    }
-
-    .brand-title {
-      font-family: var(--font-serif);
-      font-size: 1.35rem;
-      font-weight: 700;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-    }
-    .brand-badge {
-      font-family: var(--font-mono);
-      font-size: 0.68rem;
-      padding: 2px 8px;
-      border-radius: var(--pill-radius);
-      background: var(--surface-container-highest);
-      color: var(--primary);
-      border: 1px solid var(--outline-variant);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .app-bar-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .icon-btn {
-      background: var(--surface-container);
-      border: 1px solid var(--outline-variant);
-      color: var(--text);
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 1.1rem;
-    }
-    .icon-btn:hover {
-      background: var(--surface-container-highest);
-      border-color: var(--primary);
-    }
-
-    .user-pill {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 5px 14px;
-      background: var(--surface-container);
-      border: 1px solid var(--outline-variant);
-      border-radius: var(--pill-radius);
-      font-size: 0.82rem;
-      font-family: var(--font-mono);
-      color: var(--text);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .user-pill:hover {
-      border-color: var(--primary);
-      background: var(--surface-container-highest);
-    }
-    .user-avatar {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: var(--primary);
-      color: var(--on-primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 0.75rem;
-    }
-
-    /* Announcement Banner */
-    .notice-bar {
-      background: linear-gradient(90deg, rgba(206, 191, 240, 0.12) 0%, rgba(158, 208, 138, 0.12) 100%);
-      border-bottom: 1px solid var(--outline-variant);
-      padding: 10px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 0.85rem;
-      font-family: var(--font-sans);
-    }
-    .notice-content {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--text);
-    }
-    .notice-tag {
-      background: var(--primary);
-      color: var(--on-primary);
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-
-    /* Main Container */
-    .dashboard-container {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 28px 20px 60px;
+    .container {
+      max-width: 820px;
       width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
     }
-
-    /* Hero / Status Card */
-    .hero-card {
-      background: var(--surface-container);
-      border: 1px solid var(--outline-variant);
-      border-radius: var(--card-radius);
-      padding: 32px 36px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
     }
-    .hero-card::after {
-      content: "";
-      position: absolute;
-      top: -60px;
-      right: -60px;
-      width: 220px;
-      height: 220px;
-      background: radial-gradient(circle, rgba(206, 191, 240, 0.12) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    .hero-welcome {
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-    }
-    .hero-tier {
-      font-family: var(--font-serif);
-      font-size: 2.3rem;
-      font-weight: 700;
-      letter-spacing: -0.5px;
+    .header h1 {
+      font-size: 2.2rem;
+      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
       margin-bottom: 12px;
-      display: flex;
-      align-items: baseline;
-      gap: 14px;
-      flex-wrap: wrap;
     }
-    .hero-tier-sub {
-      font-family: var(--font-sans);
-      font-size: 0.95rem;
+    .header p {
       color: var(--text-muted);
-      font-weight: normal;
+      font-size: 1.05rem;
     }
-
-    /* Wave Progress Bar (Squiggly Wave) */
-    .wave-progress-container {
-      margin: 24px 0 16px;
-      background: var(--surface-container-high);
-      border-radius: 16px;
-      padding: 16px 20px;
-      border: 1px solid var(--outline-variant);
-    }
-    .wave-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      font-size: 0.85rem;
-    }
-    .wave-label {
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-    .wave-percent {
-      font-family: var(--font-mono);
-      font-weight: 700;
-      color: var(--primary);
-    }
-    .wave-track {
-      height: 14px;
-      background: var(--surface-container-highest);
-      border-radius: 7px;
-      position: relative;
-      overflow: hidden;
-    }
-    .wave-bar {
-      height: 100%;
-      background: linear-gradient(90deg, #9ed08a 0%, #cebff0 70%, #ecc16c 100%);
-      border-radius: 7px;
-      position: relative;
-      transition: width 1s ease-in-out;
-    }
-    .wave-svg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 200%;
-      height: 100%;
-      animation: waveMove 3s linear infinite;
-      opacity: 0.45;
-    }
-    @keyframes waveMove {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-    .wave-footer {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 8px;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-family: var(--font-mono);
-    }
-
-    /* Hero Meta Grid */
-    .hero-meta-grid {
+    .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
-      margin-top: 24px;
-      padding-top: 20px;
-      border-top: 1px solid var(--outline-variant);
+      margin-bottom: 20px;
     }
-    .meta-chip {
-      background: var(--surface-container-high);
-      padding: 14px 18px;
-      border-radius: 14px;
-      border: 1px solid var(--outline-variant);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
     }
-    .meta-chip-title {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      font-family: var(--font-mono);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .meta-chip-val {
-      font-family: var(--font-mono);
-      font-size: 1.35rem;
+    .stat-val {
+      font-size: 2rem;
       font-weight: 700;
-      color: var(--text);
+      color: var(--accent);
+      margin-bottom: 6px;
     }
-
-    /* Subscription Card */
-    .sub-card {
-      background: var(--surface-container);
-      border: 1px solid var(--outline-variant);
-      border-radius: var(--card-radius);
-      padding: 28px 32px;
-      display: grid;
-      grid-template-columns: 140px 1fr;
-      gap: 28px;
-      align-items: center;
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-    }
-    @media (max-width: 768px) {
-      .sub-card {
-        grid-template-columns: 1fr;
-        text-align: center;
-      }
-      .qr-box-wrapper { margin: 0 auto; }
-    }
-
-    .qr-box-wrapper {
-      width: 140px;
-      height: 140px;
-      background: #ffffff;
-      padding: 6px;
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      cursor: pointer;
-      position: relative;
-    }
-    .qr-box-wrapper:hover::after {
-      content: "点击放大";
-      position: absolute;
-      inset: 0;
-      background: rgba(0,0,0,0.65);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.78rem;
-      border-radius: 16px;
-      font-weight: 500;
-    }
-    .qr-zoom-icon {
-      position: absolute;
-      bottom: 6px;
-      right: 6px;
-      font-size: 0.75rem;
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      padding: 2px 4px;
-      border-radius: 4px;
-    }
-
-    .sub-details {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .sub-title {
-      font-family: var(--font-serif);
-      font-size: 1.4rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .sub-desc {
+    .stat-label {
       color: var(--text-muted);
-      font-size: 0.88rem;
-      line-height: 1.5;
+      font-size: 0.9rem;
     }
-
-    .sub-input-row {
+    .main-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 28px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      margin-bottom: 20px;
+    }
+    .action-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .status-pill.running {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--warning);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .status-pill.running .status-dot {
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.2); }
+    }
+    .sub-box {
       display: flex;
       gap: 10px;
+      margin: 16px 0;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      align-items: center;
     }
     .sub-input {
       flex: 1;
-      background: var(--surface-container-high);
-      border: 1px solid var(--outline-variant);
-      border-radius: var(--pill-radius);
-      padding: 10px 18px;
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      color: var(--text);
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-size: 0.95rem;
+      font-family: monospace;
       outline: none;
     }
-    .sub-input:focus {
-      border-color: var(--primary);
-    }
-
-    .clients-matrix {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    /* Buttons */
-    .btn-filled {
+    .btn {
       background: var(--primary);
-      color: var(--on-primary);
+      color: #fff;
       border: none;
-      border-radius: var(--pill-radius);
-      padding: 10px 22px;
-      font-size: 0.88rem;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
       font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      white-space: nowrap;
+      transition: all 0.2s;
+      font-size: 0.95rem;
     }
-    .btn-filled:hover {
+    .btn:hover {
       background: var(--primary-hover);
-      box-shadow: 0 4px 12px rgba(206, 191, 240, 0.35);
     }
-    .btn-tonal {
-      background: var(--surface-container-high);
-      color: var(--text);
-      border: 1px solid var(--outline-variant);
-      border-radius: var(--pill-radius);
-      padding: 8px 16px;
-      font-size: 0.82rem;
-      font-weight: 500;
-      cursor: pointer;
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-update {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      white-space: nowrap;
     }
-    .btn-tonal:hover {
-      background: var(--surface-container-highest);
-      border-color: var(--primary);
-      color: var(--primary);
+    .btn-update:hover {
+      background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
     }
-
-    /* Section Headers */
-    .section-header {
+    .btn-group {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 14px;
       flex-wrap: wrap;
       gap: 12px;
+      margin-top: 14px;
     }
-    .section-title {
-      font-family: var(--font-serif);
-      font-size: 1.3rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .btn-secondary {
+      background: #334155;
+      text-decoration: none;
     }
-
-    .server-search {
-      background: var(--surface-container);
-      border: 1px solid var(--outline-variant);
-      border-radius: var(--pill-radius);
-      padding: 8px 18px;
-      font-size: 0.85rem;
+    .btn-secondary:hover {
+      background: #475569;
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .btn-outline:hover {
+      background: #1e293b;
       color: var(--text);
-      outline: none;
-      min-width: 240px;
     }
-    .server-search:focus {
-      border-color: var(--primary);
+    .alert-box {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      display: none;
     }
-
-    /* Servers Grid */
-    .servers-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
+    .alert-success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
     }
-    .server-card {
-      background: var(--surface-container);
-      border: 1px solid var(--outline-variant);
-      border-radius: 16px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      transition: all 0.2s ease;
+    .alert-info {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #7dd3fc;
     }
-    .server-card:hover {
-      border-color: var(--primary);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    .alert-error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
     }
-    .server-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 8px;
-    }
-    .server-title {
-      font-size: 0.92rem;
-      font-weight: 600;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
-    }
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.72rem;
-      color: var(--success);
-      background: rgba(158, 208, 138, 0.12);
-      padding: 2px 8px;
-      border-radius: var(--pill-radius);
-      font-family: var(--font-mono);
-      white-space: nowrap;
-    }
-    .status-dot-green {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 6px var(--success);
-    }
-    .server-tags {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .tag-pill {
-      font-family: var(--font-mono);
-      font-size: 0.68rem;
-      padding: 2px 8px;
-      background: var(--surface-container-high);
-      border: 1px solid var(--outline-variant);
-      border-radius: 6px;
-      color: var(--secondary);
-    }
-    .server-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 4px;
-      padding-top: 8px;
-      border-top: 1px dashed var(--outline-variant);
-    }
-    .server-rate {
-      font-size: 0.75rem;
-      color: var(--warning);
-      font-weight: 500;
-    }
-    .server-delay {
-      font-family: var(--font-mono);
-      font-size: 0.78rem;
-      color: var(--success);
-    }
-
-    /* Modal Backdrop & Dialogs */
+    /* Modal Styles */
     .modal-backdrop {
       position: fixed;
-      inset: 0;
-      z-index: 100;
-      background: rgba(0, 0, 0, 0.78);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
       display: none;
       align-items: center;
       justify-content: center;
+      z-index: 999;
       padding: 20px;
     }
-    .modal-dialog {
-      background: var(--surface-container);
-      border: 1px solid var(--outline-variant);
-      border-radius: 24px;
-      max-width: 480px;
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      max-width: 500px;
       width: 100%;
-      padding: 28px;
-      box-shadow: 0 24px 48px rgba(0,0,0,0.5);
-      animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      position: relative;
-      max-height: 90vh;
-      overflow-y: auto;
+      padding: 24px;
+      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.4);
     }
-    @keyframes modalPop {
-      0% { opacity: 0; transform: scale(0.92); }
-      100% { opacity: 1; transform: scale(1); }
-    }
-
-    .modal-close-btn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font-size: 1.2rem;
-      cursor: pointer;
-    }
-
-    .modal-header-box {
-      margin-bottom: 20px;
+    .footer {
       text-align: center;
-    }
-    .modal-title {
-      font-family: var(--font-serif);
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 6px;
-    }
-    .modal-sub {
-      color: var(--text-muted);
-      font-size: 0.88rem;
-      line-height: 1.4;
-    }
-
-    .tab-nav {
-      display: flex;
-      background: var(--surface-container-high);
-      border-radius: var(--pill-radius);
-      padding: 4px;
-      margin-bottom: 20px;
-      border: 1px solid var(--outline-variant);
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 8px 12px;
-      border: none;
-      background: transparent;
       color: var(--text-muted);
       font-size: 0.85rem;
-      font-weight: 600;
-      border-radius: var(--pill-radius);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .tab-btn.active {
-      background: var(--primary);
-      color: var(--on-primary);
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-      text-align: left;
-    }
-    .form-label {
-      display: block;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      font-family: var(--font-mono);
-      letter-spacing: 0.5px;
-    }
-    .form-control {
-      width: 100%;
-      background: var(--surface-container-high);
-      border: 1px solid var(--outline-variant);
-      border-radius: 12px;
-      padding: 12px 14px;
-      color: var(--text);
-      font-size: 0.92rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .form-control:focus {
-      border-color: var(--primary);
-    }
-    .form-hint {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 5px;
-      line-height: 1.4;
-    }
-
-    .toast-message {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 120;
-      background: var(--primary);
-      color: var(--on-primary);
-      padding: 12px 24px;
-      border-radius: var(--pill-radius);
-      font-weight: 600;
-      font-size: 0.9rem;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-      transform: translateY(100px);
-      opacity: 0;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .toast-message.show {
-      transform: translateY(0);
-      opacity: 1;
-    }
-
-    /* Auth Gate Overlay */
-    #authGateOverlay {
-      position: fixed;
-      inset: 0;
-      z-index: 90;
-      background: rgba(27, 25, 30, 0.95);
-      backdrop-filter: blur(16px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .auth-gate-box {
-      background: var(--surface-container);
-      border: 1px solid var(--outline-variant);
-      border-radius: 24px;
-      max-width: 460px;
-      width: 100%;
-      padding: 36px 32px;
-      text-align: center;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
-      animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    /* Footer */
-    .app-footer {
-      text-align: center;
-      padding: 30px 20px;
-      color: var(--text-muted);
-      font-size: 0.82rem;
-      border-top: 1px solid var(--outline-variant);
-      margin-top: auto;
+      margin-top: 24px;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <div class="header">
+      <h1>⚡ Hercinia 自动化高优节点池</h1>
+      <p>全网 17 处核心公共节点源 · GitHub Actions 24/7 云端智能测速筛选 · 专属稳定加速</p>
+    </div>
 
-  <!-- Top App Bar -->
-  <header class="app-bar">
-    <a href="#" class="brand-title">
-      <span>🐱 Hercinia Network</span>
-      <span class="brand-badge">PRO EDITION</span>
-    </a>
-    <div class="app-bar-actions">
-      <button class="icon-btn" id="themeToggleBtn" title="切换深色/浅色模式">🌙</button>
-      <div class="user-pill" id="userPill" onclick="handleUserPillClick()" title="点击查看个人中心 / 退出登录">
-        <span class="user-avatar" id="avatarText">?</span>
-        <span id="userAccountText">未登录</span>
+    <!-- 实时状态面板 -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div id="statAliveCount" class="stat-val">1458</div>
+        <div class="stat-label">当前存活低延迟节点</div>
+      </div>
+      <div class="stat-card">
+        <div id="statAvgDelay" class="stat-val">231 ms</div>
+        <div class="stat-label">平均握手延迟</div>
+      </div>
+      <div class="stat-card">
+        <div id="statUpdatedAt" class="stat-val" style="font-size: 1.15rem; line-height: 2.2rem; color: #a78bfa;">2026-10-17 04:21:08</div>
+        <div class="stat-label">最近更新时间 (北京时间)</div>
       </div>
     </div>
-  </header>
 
-  <!-- Global Announcement Banner -->
-  <div class="notice-bar" id="noticeBar">
-    <div class="notice-content">
-      <span class="notice-tag">📢 全站公告</span>
-      <span id="noticeContentText">全新 24/7 边缘节点云池已就绪！采用授权码注册体系，节点自动化探活。</span>
+    <!-- 手动更新与云端调度控制卡片 -->
+    <div class="main-card">
+      <div class="action-header">
+        <div>
+          <h3 style="margin-bottom: 4px;">⚡ 云端自动维护与即时刷新</h3>
+          <p style="color: var(--text-muted); font-size: 0.88rem;">
+            默认每 6 小时自动爬取并清洗测速。若需获取当前最新节点，可随时点击下方按钮立即触发：
+          </p>
+        </div>
+        <div id="statusPill" class="status-pill">
+          <span class="status-dot"></span>
+          <span id="statusPillText">云端就绪</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+        <button id="btnTrigger" class="btn btn-update" onclick="handleManualUpdate()">
+          <span id="btnIcon">🔄</span>
+          <span id="btnText">立即手动触发云端更新</span>
+        </button>
+
+        <a href="https://github.com/Alex234123/hercinia-node-pool/actions/workflows/update.yml" target="_blank" class="btn btn-secondary" style="font-size: 0.9rem;">
+          ↗ GitHub Actions 后台
+        </a>
+
+        <button class="btn btn-outline" style="font-size: 0.85rem;" onclick="openTokenModal()">
+          🔑 授权码设置
+        </button>
+      </div>
+
+      <div id="alertMsg" class="alert-box"></div>
     </div>
-    <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.1rem;" onclick="document.getElementById('noticeBar').style.display='none'">✕</button>
-  </div>
 
-  <!-- Main Container -->
-  <main class="dashboard-container">
-
-    <!-- Hero Card -->
-    <section class="hero-card">
-      <div class="hero-welcome">欢迎回来 · 专属智能网络中枢</div>
-      <div class="hero-tier">
-        <span id="heroTierTitle">HERCINIA VIP</span>
-        <span class="hero-tier-sub" id="heroTierSub">授权订阅生效中</span>
-      </div>
-
-      <!-- Wave Bar -->
-      <div class="wave-progress-container">
-        <div class="wave-header">
-          <span class="wave-label">🌊 动态网络流量状态 (Squiggly Wave)</span>
-          <span class="wave-percent" id="trafficPercent">100% 可用</span>
-        </div>
-        <div class="wave-track">
-          <div class="wave-bar" id="waveBar" style="width: 100%;">
-            <svg class="wave-svg" viewBox="0 0 120 20" preserveAspectRatio="none">
-              <path d="M 0,10 C 30,16 60,4 90,10 C 120,16 150,4 180,10 L 180,20 L 0,20 Z" fill="rgba(255,255,255,0.3)"></path>
-            </svg>
-          </div>
-        </div>
-        <div class="wave-footer">
-          <span id="trafficUsedText">已消耗: 12.8 GB / 1024 GB (套餐配额)</span>
-          <span id="authCodeBadgeText">已认证 · 授权码生效中</span>
-        </div>
-      </div>
-
-      <!-- Hero Meta Grid -->
-      <div class="hero-meta-grid">
-        <div class="meta-chip">
-          <span class="meta-chip-title">当前低延迟存活节点</span>
-          <span class="meta-chip-val" id="statAliveCount" style="color: var(--success);">--</span>
-        </div>
-        <div class="meta-chip">
-          <span class="meta-chip-title">全网平均握手延迟</span>
-          <span class="meta-chip-val" id="statAvgDelay" style="color: var(--primary);">-- ms</span>
-        </div>
-        <div class="meta-chip">
-          <span class="meta-chip-title">最近云端自动化刷新</span>
-          <span class="meta-chip-val" id="statUpdatedAt" style="font-size: 0.95rem; font-family: var(--font-mono); line-height: 1.6;">--</span>
-        </div>
-        <div class="meta-chip">
-          <span class="meta-chip-title">授权等级 &amp; 有效期</span>
-          <span class="meta-chip-val" id="heroTierExpiryText" style="color: var(--warning); font-size: 1.15rem;">--</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Subscription & One-Click Import Card -->
-    <section class="sub-card">
-      <div class="qr-box-wrapper" onclick="openQrModal()" title="点击放大二维码">
-        <div id="subQrCode" title="https://pool.hercinia.kdns.fr/clash.yaml"><canvas width="128" height="128" style="display: none;"></canvas><img src="data:image/png;base64,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" style="display: block;"></div>
-        <span class="qr-zoom-icon">🔍</span>
-      </div>
-
-      <div class="sub-details">
-        <div class="sub-title">📦 专属托管订阅与快速接入</div>
-        <p class="sub-desc">
-          已通过专属授权凭证绑定。原生适配 Clash、FlClash、Sing-box、Shadowrocket、Quantumult X 等全套客户端。
-        </p>
-
-        <div class="sub-input-row">
-          <input type="text" id="subUrlInput" class="sub-input" readonly="" value="https://pool.hercinia.kdns.fr/clash.yaml">
-          <button class="btn-filled" onclick="copySubscription()">📋 复制链接</button>
-        </div>
-
-        <div class="clients-matrix">
-          <button class="btn-tonal" onclick="importClash()">⚡ 一键导入 Clash / FlClash</button>
-          <button class="btn-tonal" onclick="importShadowrocket()">🚀 导入 Shadowrocket</button>
-          <button class="btn-tonal" onclick="importSingbox()">📦 导入 Sing-box</button>
-          <button class="btn-tonal" onclick="importQuantumultX()">⭕ 导入 Quantumult X</button>
-          <button class="btn-tonal" onclick="importSurfboard()">🏄 导入 Surfboard</button>
-          <a href="https://pool.hercinia.kdns.fr/clash.yaml" class="btn-tonal" download="">💾 下载 YAML</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- Server Showcase -->
-    <section>
-      <div class="section-header">
-        <div class="section-title">
-          <span>🌐 优选节点列表</span>
-          <span class="brand-badge" id="nodeCountBadge">-- NODES</span>
-        </div>
-        <input type="text" id="nodeSearchInput" class="server-search" placeholder="🔍 搜索国家/节点名/协议..." oninput="filterNodes()">
-      </div>
-
-      <div class="servers-grid" id="serversGrid" style="margin-top: 14px;">
-        <div style="grid-column: 1 / -1; padding: 40px; text-align: center; color: var(--text-muted);">
-          正在从云端节点池拉取最新节点信息...
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Mandatory Auth Gate (用户未登录或未输入授权码时的强制解锁蒙层) -->
-  <div id="authGateOverlay" style="display: flex;">
-    <div class="auth-gate-box">
-      <div style="font-size: 3rem; margin-bottom: 12px;">🛡️</div>
-      <h2 style="font-family: var(--font-serif); font-size: 1.6rem; color: var(--primary); margin-bottom: 8px;" id="gateTitle">用户验证与授权中心</h2>
-      <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 24px;" id="gateDesc">
-        请输入您的账号。有效授权用户可直接一键登录；新用户或授权已到期账号请输入授权码激活。
+    <!-- 订阅地址与导入卡片 -->
+    <div class="main-card">
+      <h3 style="margin-bottom: 8px;">🔗 永久专属订阅地址</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">
+        已绑定自定义域名 <code>sub.jiajinfengherciniaxa.kdns.fr</code>，可直接粘贴进 Herciniamihomo、Clash Verge、Mihomo Party 等客户端：
       </p>
 
-      <form onsubmit="handleAuthGateSubmit(event)">
-        <div class="form-group">
-          <label class="form-label">用户账号 / 邮箱</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="email" id="gateEmail" class="form-control" placeholder="请输入您的邮箱" required="" autocomplete="email" oninput="checkGateAccountStatus(false)" style="flex: 1;">
-            <button type="button" class="btn-tonal" id="btnCheckAccount" onclick="checkGateAccountStatus(true)" style="padding: 0 16px; white-space: nowrap; font-size: 0.85rem;" title="手动检查账号是否存在有效授权">
-              🔍 检查
-            </button>
-          </div>
-        </div>
-
-        <!-- Dynamic Account Auth Status Badge -->
-        <div id="gateAccountStatusTip" style="display: none; margin-bottom: 16px; padding: 10px 14px; border-radius: 12px; font-size: 0.82rem; text-align: left;"></div>
-
-        <div class="form-group" id="gateAuthCodeGroup">
-          <label class="form-label">专属邀请授权码 (Invite Code)</label>
-          <input type="text" id="gateAuthCode" class="form-control" placeholder="输入站长授权码，例如年付/季付/月付/试用码" style="font-family: var(--font-mono); text-align: center; letter-spacing: 1px;" autocomplete="off">
-          <div class="form-hint" id="gateCodeHint">新用户激活或授权到期续期使用。</div>
-        </div>
-
-        <button type="submit" class="btn-filled" id="gateSubmitBtn" style="width: 100%; justify-content: center; margin-top: 10px; padding: 12px;">
-          🚀 验证并进入机场中枢
-        </button>
-      </form>
-      <div style="margin-top: 18px; font-size: 0.78rem; color: var(--text-muted);">
-        如需获取授权码或技术支持，请联系站长。
+      <div class="sub-box">
+        <input type="text" id="subUrl" class="sub-input" readonly value="https://sub.jiajinfengherciniaxa.kdns.fr/clash.yaml">
+        <button class="btn" onclick="copySub()">复制订阅链接</button>
       </div>
+
+      <div class="btn-group">
+        <a href="https://sub.jiajinfengherciniaxa.kdns.fr/clash.yaml" class="btn btn-secondary">直接下载 YAML 配置</a>
+        <a href="clash://install-config?url=https://sub.jiajinfengherciniaxa.kdns.fr/clash.yaml" class="btn" style="text-decoration: none; background: #0284c7;">一键导入 Clash</a>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Powered by Hercinia & GitHub Actions · 仅供技术交流与网络测试使用</p>
     </div>
   </div>
 
-  <!-- User Login / Register Modal Dialog (未登录时弹窗) -->
-  <div class="modal-backdrop" id="loginModal">
-    <div class="modal-dialog">
-      <button class="modal-close-btn" onclick="closeLoginModal()">✕</button>
-      <div class="modal-header-box">
-        <div class="modal-title">Hercinia Network</div>
-        <div class="modal-sub">用户账号与授权码绑定中心</div>
-      </div>
-
-      <div class="tab-nav">
-        <button class="tab-btn active" id="tabLoginBtn" onclick="switchAuthTab('login')">用户登录</button>
-        <button class="tab-btn" id="tabRegisterBtn" onclick="switchAuthTab('register')">凭授权码注册</button>
-      </div>
-
-      <!-- Login Form -->
-      <form id="authLoginForm" onsubmit="handleUserLoginSubmit(event)">
-        <div class="form-group">
-          <label class="form-label">用户邮箱</label>
-          <input type="email" id="loginEmail" class="form-control" placeholder="请输入登录邮箱" required="" autocomplete="email">
-        </div>
-        <div class="form-group">
-          <label class="form-label">登录密码</label>
-          <input type="password" id="loginPassword" class="form-control" placeholder="请输入密码" required="" autocomplete="current-password">
-        </div>
-        <button type="submit" class="btn-filled" style="width: 100%; justify-content: center; margin-top: 10px;">
-          进入仪表盘
-        </button>
-      </form>
-
-      <!-- Register Form -->
-      <form id="authRegisterForm" style="display: none;" onsubmit="handleUserRegisterSubmit(event)">
-        <div class="form-group">
-          <label class="form-label">注册邮箱</label>
-          <input type="email" id="regEmail" class="form-control" placeholder="your_email@example.com" required="" autocomplete="email">
-        </div>
-        <div class="form-group">
-          <label class="form-label">设置密码</label>
-          <input type="password" id="regPassword" class="form-control" placeholder="设置您的登录密码" required="" autocomplete="new-password">
-        </div>
-        <div class="form-group">
-          <label class="form-label">站长授权码 (必填)</label>
-          <input type="text" id="regAuthCode" class="form-control" placeholder="输入年付/季付/月付/7天试用授权码" required="" style="font-family: var(--font-mono);" autocomplete="off">
-          <div class="form-hint">需向站长获取授权邀请码方可完成注册。</div>
-        </div>
-        <button type="submit" class="btn-filled" style="width: 100%; justify-content: center; margin-top: 10px;">
-          立即激活并注册
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- User Profile Modal Dialog (已登录时点击右上角用户中心弹出) -->
-  <div class="modal-backdrop" id="userProfileModal">
-    <div class="modal-dialog">
-      <button class="modal-close-btn" onclick="closeUserProfileModal()">✕</button>
-      <div class="modal-header-box">
-        <div class="modal-title">👤 用户中心</div>
-        <div class="modal-sub">个人账号与当前订阅授权状态</div>
-      </div>
-
-      <div style="background: var(--surface-container-high); border: 1px solid var(--outline-variant); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
-        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--outline-variant);">
-          <div class="user-avatar" id="modalUserAvatar" style="width: 44px; height: 44px; font-size: 1.2rem;">U</div>
-          <div>
-            <div style="font-weight: 600; font-size: 1rem; color: var(--text);" id="modalUserEmail">--</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">当前登录账号</div>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem;">
-          <div>
-            <span style="color: var(--text-muted); font-size: 0.75rem;">绑定授权码</span>
-            <div style="font-family: var(--font-mono); font-weight: bold; color: var(--primary);" id="modalUserCode">--</div>
-          </div>
-          <div>
-            <span style="color: var(--text-muted); font-size: 0.75rem;">套餐档位</span>
-            <div style="font-weight: bold; color: var(--warning);" id="modalUserTier">--</div>
-          </div>
-          <div>
-            <span style="color: var(--text-muted); font-size: 0.75rem;">到期时间</span>
-            <div style="font-family: var(--font-mono);" id="modalUserExpiry">--</div>
-          </div>
-          <div>
-            <span style="color: var(--text-muted); font-size: 0.75rem;">账号状态</span>
-            <div style="color: var(--success); font-weight: 600;">● 正常服务中</div>
-          </div>
-        </div>
-      </div>
-
-      <div style="display: flex; gap: 12px;">
-        <button class="btn-tonal" onclick="closeUserProfileModal()" style="flex: 1; justify-content: center;">返回仪表盘</button>
-        <button class="btn-filled" onclick="userLogout()" style="flex: 1; justify-content: center; background: var(--danger); color: #fff;">🚪 退出登录</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- QR Modal Dialog -->
-  <div class="modal-backdrop" id="qrModal">
-    <div class="modal-dialog" style="max-width: 340px; text-align: center;">
-      <button class="modal-close-btn" onclick="closeQrModal()">✕</button>
-      <h3 style="font-family: var(--font-serif); margin-bottom: 8px;">订阅专属二维码</h3>
-      <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 18px;">
-        适用于 Shadowrocket、v2rayNG、Hiddify 等扫码配置
+  <!-- Token 配置模态框 -->
+  <div id="tokenModal" class="modal-backdrop">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 10px;">🔐 设置 GitHub 授权码 (PAT)</h3>
+      <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 14px;">
+        为了安全，授权码将<strong>仅保存在您当前浏览器的 LocalStorage 中</strong>，用于直接向 GitHub 发送工作流调度请求。<br>
+        如果您已经在 GitHub 网页端登录，也可以直接点击主页面的“GitHub Actions 后台”手动运行工作流。
       </p>
-      <div style="background: #fff; padding: 16px; border-radius: 16px; display: inline-block;">
-        <div id="subQrCodeLarge" title="https://pool.hercinia.kdns.fr/clash.yaml"><canvas width="240" height="240" style="display: none;"></canvas><img src="data:image/png;base64,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" style="display: block;"></div>
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">GitHub Personal Access Token (需包含 repo 或 workflow 权限):</label>
+        <input type="password" id="tokenInput" class="sub-input" style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px;" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
       </div>
-      <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 14px;">
-        Hercinia Cloud Auto-Generated · pool.hercinia.kdns.fr
-      </p>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-secondary" onclick="closeTokenModal()">取消</button>
+        <button class="btn" onclick="saveTokenAndTrigger()">保存并立即更新</button>
+      </div>
     </div>
   </div>
-
-  <!-- Toast Notification -->
-  <div class="toast-message" id="toastMsg">✓ 操作成功！</div>
-
-  <!-- Footer -->
-  <footer class="app-footer">
-    <p>🐱 Hercinia Network · 智能边缘节点矩阵 &amp; 机场中枢 · 域名已绑定 pool.hercinia.kdns.fr</p>
-  </footer>
 
   <script>
-    const SUB_URL = 'https://pool.hercinia.kdns.fr/clash.yaml';
-    let allNodes = [];
+    const OWNER = 'Alex234123';
+    const REPO = 'hercinia-node-pool';
+    const WORKFLOW_ID = 'update.yml';
+    let pollInterval = null;
 
-    function formatDateTime(d) {
-      const pad = n => String(n).padStart(2, '0');
-      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    }
-
-    function isExpiredDateTime(dtStr) {
-      if (!dtStr || dtStr === '永久有效' || dtStr.startsWith('2099')) return false;
-      return new Date() > new Date(dtStr.replace(/-/g, '/'));
-    }
-
-    // --- Database Initialization (auth_code & account_auth) ---
-    async function initDatabase() {
-      // Sync from codes.json if available
-      try {
-        const res = await fetch('codes.json?_t=' + Date.now());
-        if (res.ok) {
-          const remoteCodes = await res.json();
-          let localCodes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-          const deletedCodes = JSON.parse(localStorage.getItem('hercinia_deleted_codes') || '[]');
-          remoteCodes.forEach(rc => {
-            const isDeleted = deletedCodes.includes(rc.code.toLowerCase());
-            const exists = localCodes.find(lc => lc.code.toLowerCase() === rc.code.toLowerCase());
-            if (!exists && !isDeleted) {
-              localCodes.push(rc);
-            }
-          });
-          localStorage.setItem('hercinia_auth_codes', JSON.stringify(localCodes));
-        }
-      } catch (e) {}
-
-      if (!localStorage.getItem('hercinia_auth_codes')) {
-        const defaultCodes = [
-          {
-            id: 1,
-            code: 'hercinia888',
-            package_days: 365,
-            package_type: 'official',
-            create_time: '2026-10-16 00:00:00',
-            code_expire_time: '2027-10-16 23:59:59',
-            status: 0,
-            bind_account: null,
-            activate_time: null
-          },
-          {
-            id: 2,
-            code: 'HERCINIA-TRIAL-01',
-            package_days: 7,
-            package_type: 'trial',
-            create_time: '2026-10-16 00:00:00',
-            code_expire_time: '2027-10-16 23:59:59',
-            status: 0,
-            bind_account: null,
-            activate_time: null
-          },
-          {
-            id: 3,
-            code: 'HERCINIA-MONTH-01',
-            package_days: 30,
-            package_type: 'official',
-            create_time: '2026-10-16 00:00:00',
-            code_expire_time: '2027-10-16 23:59:59',
-            status: 0,
-            bind_account: null,
-            activate_time: null
-          },
-          {
-            id: 4,
-            code: 'HERCINIA-QUARTER-01',
-            package_days: 90,
-            package_type: 'official',
-            create_time: '2026-10-16 00:00:00',
-            code_expire_time: '2027-10-16 23:59:59',
-            status: 0,
-            bind_account: null,
-            activate_time: null
-          },
-          {
-            id: 5,
-            code: 'HERCINIA-YEAR-01',
-            package_days: 365,
-            package_type: 'official',
-            create_time: '2026-10-16 00:00:00',
-            code_expire_time: '2027-10-16 23:59:59',
-            status: 0,
-            bind_account: null,
-            activate_time: null
-          }
-        ];
-        localStorage.setItem('hercinia_auth_codes', JSON.stringify(defaultCodes));
-      }
-
-      if (!localStorage.getItem('hercinia_account_auth')) {
-        const defaultAccounts = [
-          {
-            id: 1,
-            account: '2364645344@qq.com',
-            auth_expire_time: '2027-10-16 23:59:59',
-            last_auth_code: 'hercinia888',
-            used_trial: false
-          }
-        ];
-        localStorage.setItem('hercinia_account_auth', JSON.stringify(defaultAccounts));
-      }
-
-      if (!localStorage.getItem('hercinia_notice')) {
-        localStorage.setItem('hercinia_notice', '全新 24/7 边缘节点云池已就绪！采用授权码注册体系，节点自动化探活。');
-      }
-    }
-    initDatabase();
-
-    // --- Theme Management ---
-    function initTheme() {
-      const savedTheme = localStorage.getItem('hercinia_theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', savedTheme);
-      document.getElementById('themeToggleBtn').textContent = savedTheme === 'dark' ? '🌙' : '☀️';
-    }
-    document.getElementById('themeToggleBtn').addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme') || 'dark';
-      const target = current === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', target);
-      localStorage.setItem('hercinia_theme', target);
-      document.getElementById('themeToggleBtn').textContent = target === 'dark' ? '🌙' : '☀️';
-    });
-    initTheme();
-
-    function checkAuthGate() {
-      const sessionUser = localStorage.getItem('hercinia_user');
-      const gate = document.getElementById('authGateOverlay');
-
-      if (!sessionUser) {
-        document.getElementById('userAccountText').textContent = '未登录';
-        document.getElementById('avatarText').textContent = '?';
-        gate.style.display = 'flex';
-        return;
-      }
-
-      // Check account in account_auth
-      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
-      const accountObj = accounts.find(a => a.account.toLowerCase() === sessionUser.toLowerCase());
-
-      if (!accountObj) {
-        localStorage.removeItem('hercinia_user');
-        localStorage.removeItem('hercinia_verified_code');
-        gate.style.display = 'flex';
-        return;
-      }
-
-      // Check if account authorization has expired
-      if (isExpiredDateTime(accountObj.auth_expire_time)) {
-        alert('授权已到期，请输入新授权码激活');
-        localStorage.removeItem('hercinia_user');
-        localStorage.removeItem('hercinia_verified_code');
-        gate.style.display = 'flex';
-        return;
-      }
-
-      gate.style.display = 'none';
-      updateUserUI(accountObj);
-    }
-
-    function updateUserUI(accountObj) {
-      const user = accountObj.account;
-      document.getElementById('userAccountText').textContent = user;
-      document.getElementById('avatarText').textContent = user.charAt(0).toUpperCase();
-      document.getElementById('authCodeBadgeText').textContent = `已认证 · 授权有效至 [${accountObj.auth_expire_time}]`;
-
-      // Reflect Tier and Expiration in the Hero Meta card
-      const tierTitle = accountObj.used_trial ? 'PRO 会员' : 'VIP 会员';
-      document.getElementById('heroTierTitle').textContent = `HERCINIA ${tierTitle}`;
-      document.getElementById('heroTierSub').textContent = `授权到期时间: ${accountObj.auth_expire_time}`;
-      document.getElementById('heroTierExpiryText').textContent = `${accountObj.auth_expire_time}`;
-
-      // Traffic allocation
-      document.getElementById('trafficUsedText').textContent = `已消耗: 12.8 GB / 1024 GB (套餐配额)`;
-    }
-
-    // --- Core Activation Logic Engine ---
-    function activateAuthCode(accountEmail, codeStr) {
-      const now = new Date();
-      const nowStr = formatDateTime(now);
-      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
-
-      // 1. 授权码是否存在校验
-      const codeObj = codes.find(c => c.code.trim().toLowerCase() === codeStr.trim().toLowerCase());
-      if (!codeObj) {
-        return { success: false, message: '授权码无效，请核对' };
-      }
-
-      // 2. 授权码已被激活或手动作废
-      if (codeObj.status === 1) {
-        return { success: false, message: '授权码已被使用' };
-      }
-      if (codeObj.status === 2) {
-        return { success: false, message: '授权码已失效' };
-      }
-
-      // 3. 授权码已过期 (码本身激活有效期到)
-      if (codeObj.status === 3 || isExpiredDateTime(codeObj.code_expire_time)) {
-        codeObj.status = 3;
-        localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
-        return { success: false, message: '授权码已失效' };
-      }
-
-      // 查找或新建账号
-      let accountObj = accounts.find(a => a.account.toLowerCase() === accountEmail.toLowerCase());
-      if (!accountObj) {
-        const newAccId = accounts.length > 0 ? Math.max(...accounts.map(a => a.id || 0)) + 1 : 1;
-        accountObj = {
-          id: newAccId,
-          account: accountEmail,
-          auth_expire_time: null,
-          last_auth_code: null,
-          used_trial: false
-        };
-        accounts.push(accountObj);
-      }
-
-      // 4. 试用防刷限制：同一个账号，终身只能激活1次试用类授权码
-      if (codeObj.package_type === 'trial') {
-        if (accountObj.used_trial) {
-          return { success: false, message: '该账号已享受过试用，无法再次激活试用码' };
-        }
-      }
-
-      // ✅ 校验全部通过，执行核销与时长叠加：
-      // ① 授权码标记为【已使用】，写入绑定账号、激活时间；授权码作废，任何人无法再次使用；
-      codeObj.status = 1;
-      codeObj.bind_account = accountEmail;
-      codeObj.activate_time = nowStr;
-
-      // ② 账号授权到期时间 = 当前账号授权到期时间 + 套餐天数 (账号无有效授权，则以激活时间作为起始时间加上套餐天数)
-      let currentExpiry = accountObj.auth_expire_time ? new Date(accountObj.auth_expire_time.replace(/-/g, '/')) : null;
-      let baseDate = (currentExpiry && currentExpiry > now) ? currentExpiry : new Date(now.getTime());
-      baseDate.setDate(baseDate.getDate() + codeObj.package_days);
-
-      accountObj.auth_expire_time = formatDateTime(baseDate);
-      accountObj.last_auth_code = codeObj.code;
-      if (codeObj.package_type === 'trial') {
-        accountObj.used_trial = true;
-      }
-
-      // 保存至数据库
-      localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
-      localStorage.setItem('hercinia_account_auth', JSON.stringify(accounts));
-
-      // 设置当前会话
-      localStorage.setItem('hercinia_user', accountEmail);
-      localStorage.setItem('hercinia_verified_code', codeObj.code);
-
-      return { success: true, account: accountObj, code: codeObj };
-    }
-
-    function checkGateAccountStatus(isManual = false) {
-      const email = document.getElementById('gateEmail').value.trim();
-      const codeGroup = document.getElementById('gateAuthCodeGroup');
-      const codeInput = document.getElementById('gateAuthCode');
-      const submitBtn = document.getElementById('gateSubmitBtn');
-      const tipBox = document.getElementById('gateAccountStatusTip');
-
-      if (!email || !email.includes('@')) {
-        codeGroup.style.display = 'block';
-        codeInput.required = true;
-        submitBtn.innerHTML = '🚀 验证并进入机场中枢';
-        submitBtn.style.background = 'var(--primary)';
-        tipBox.style.display = 'none';
-        if (isManual) {
-          showToast('请先输入有效的邮箱账号！');
-        }
-        return;
-      }
-
-      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
-      const accountObj = accounts.find(a => a.account.toLowerCase() === email.toLowerCase());
-
-      if (accountObj && !isExpiredDateTime(accountObj.auth_expire_time)) {
-        // ✅ 匹配到后台已激活且在有效期内的账号：隐藏授权码输入框，允许直接登录
-        codeGroup.style.display = 'none';
-        codeInput.required = false;
-        codeInput.value = '';
-        submitBtn.innerHTML = `⚡ 授权有效 · 直接登录账号`;
-        submitBtn.style.background = 'var(--success)';
-        tipBox.style.display = 'block';
-        tipBox.style.background = 'rgba(158, 208, 138, 0.12)';
-        tipBox.style.border = '1px solid rgba(158, 208, 138, 0.3)';
-        tipBox.style.color = 'var(--success)';
-        tipBox.innerHTML = `✓ 检测到有效授权账号！有效期至: <strong>${accountObj.auth_expire_time}</strong>，无需输入授权码，点击下方按钮直接登录。`;
-        if (isManual) {
-          showToast(`✓ 检测成功：账号有效授权至 ${accountObj.auth_expire_time}`);
-        }
-      } else if (accountObj && isExpiredDateTime(accountObj.auth_expire_time)) {
-        // ❌ 账号存在但已过期：需要新授权码激活
-        codeGroup.style.display = 'block';
-        codeInput.required = true;
-        submitBtn.innerHTML = '🔄 激活新授权码恢复登录';
-        submitBtn.style.background = 'var(--warning)';
-        tipBox.style.display = 'block';
-        tipBox.style.background = 'rgba(235, 199, 111, 0.12)';
-        tipBox.style.border = '1px solid rgba(235, 199, 111, 0.3)';
-        tipBox.style.color = 'var(--warning)';
-        tipBox.innerHTML = `⚠️ 该账号授权已于 <strong>${accountObj.auth_expire_time}</strong> 到期，请输入新授权码激活续期。`;
-        if (isManual) {
-          showToast('⚠️ 该账号授权已到期，需输入授权码续费！');
-        }
-      } else {
-        // ℹ️ 全新未注册账号：需要授权码完成注册
-        codeGroup.style.display = 'block';
-        codeInput.required = true;
-        submitBtn.innerHTML = '🚀 凭授权码激活并进入';
-        submitBtn.style.background = 'var(--primary)';
-        tipBox.style.display = 'none';
-        if (isManual) {
-          showToast('ℹ️ 未查询到此账号，新账号请凭授权码激活进入！');
-        }
-      }
-    }
-
-    function handleAuthGateSubmit(e) {
-      e.preventDefault();
-      const email = document.getElementById('gateEmail').value.trim();
-      const code = document.getElementById('gateAuthCode').value.trim();
-
-      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
-      const accountObj = accounts.find(a => a.account.toLowerCase() === email.toLowerCase());
-
-      // 如果账号存在且仍在授权有效期内，直接登录！无需输入授权码
-      if (accountObj && !isExpiredDateTime(accountObj.auth_expire_time) && !code) {
-        localStorage.setItem('hercinia_user', accountObj.account);
-        localStorage.setItem('hercinia_verified_code', accountObj.last_auth_code || '');
-        document.getElementById('authGateOverlay').style.display = 'none';
-        updateUserUI(accountObj);
-        showToast(`✓ 欢迎回来！账号授权有效至: ${accountObj.auth_expire_time}`);
-        return;
-      }
-
-      // 如果未输入授权码
-      if (!code) {
-        if (accountObj && isExpiredDateTime(accountObj.auth_expire_time)) {
-          alert('授权已到期，请输入新授权码激活');
-        } else {
-          alert('请输入站长授权码');
-        }
-        return;
-      }
-
-      // 输入了授权码，执行激活/续期逻辑
-      const result = activateAuthCode(email, code);
-      if (!result.success) {
-        alert(result.message);
-        return;
-      }
-
-      document.getElementById('authGateOverlay').style.display = 'none';
-      updateUserUI(result.account);
-      showToast(`✓ 激活成功！到期时间已延至: ${result.account.auth_expire_time}`);
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById('toastMsg');
-      toast.textContent = msg;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2800);
-    }
-
-    // --- User Modal Tabs ---
-    function switchAuthTab(type) {
-      if (type === 'login') {
-        document.getElementById('tabLoginBtn').classList.add('active');
-        document.getElementById('tabRegisterBtn').classList.remove('active');
-        document.getElementById('authLoginForm').style.display = 'block';
-        document.getElementById('authRegisterForm').style.display = 'none';
-      } else {
-        document.getElementById('tabLoginBtn').classList.remove('active');
-        document.getElementById('tabRegisterBtn').classList.add('active');
-        document.getElementById('authLoginForm').style.display = 'none';
-        document.getElementById('authRegisterForm').style.display = 'block';
-      }
-    }
-
-    function handleUserLoginSubmit(e) {
-      e.preventDefault();
-      const email = document.getElementById('loginEmail').value.trim();
-      const pass = document.getElementById('loginPassword').value.trim();
-
-      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
-      const accountObj = accounts.find(a => a.account.toLowerCase() === email.toLowerCase());
-
-      if (!accountObj) {
-        alert('账号不存在或未激活，请凭有效授权码激活注册！');
-        return;
-      }
-
-      // 5. 账号授权到期登录提示
-      if (isExpiredDateTime(accountObj.auth_expire_time)) {
-        alert('授权已到期，请输入新授权码激活');
-        return;
-      }
-
-      localStorage.setItem('hercinia_user', accountObj.account);
-      localStorage.setItem('hercinia_verified_code', accountObj.last_auth_code || '');
-      updateUserUI(accountObj);
-      closeLoginModal();
-      checkAuthGate();
-      showToast(`✓ 登录成功！欢迎回来，${accountObj.account}`);
-    }
-
-    function handleUserRegisterSubmit(e) {
-      e.preventDefault();
-      const email = document.getElementById('regEmail').value.trim();
-      const pass = document.getElementById('regPassword').value.trim();
-      const code = document.getElementById('regAuthCode').value.trim();
-
-      const result = activateAuthCode(email, code);
-      if (!result.success) {
-        alert(result.message);
-        return;
-      }
-
-      updateUserUI(result.account);
-      closeLoginModal();
-      checkAuthGate();
-      showToast(`🎉 激活成功！到期时间已延至: ${result.account.auth_expire_time}`);
-    }
-
-    // --- QR Codes & Modals ---
-    function renderQRs() {
-      try {
-        const qrEl = document.getElementById("subQrCode");
-        qrEl.innerHTML = '';
-        new QRCode(qrEl, {
-          text: SUB_URL,
-          width: 128,
-          height: 128,
-          colorDark: "#1b191e",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
-
-        const qrLargeEl = document.getElementById("subQrCodeLarge");
-        qrLargeEl.innerHTML = '';
-        new QRCode(qrLargeEl, {
-          text: SUB_URL,
-          width: 240,
-          height: 240,
-          colorDark: "#1b191e",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
-      } catch (e) {}
-    }
-    setTimeout(renderQRs, 100);
-
-    function copySubscription() {
-      const inp = document.getElementById('subUrlInput');
+    function copySub() {
+      const inp = document.getElementById('subUrl');
       inp.select();
       navigator.clipboard.writeText(inp.value).then(() => {
-        showToast('✓ 专属订阅地址已复制到剪贴板！');
+        alert('✓ 订阅地址已复制到剪贴板！可以直接粘贴到客户端中添加订阅。');
       });
     }
 
-    function importClash() {
-      window.location.href = `clash://install-config?url=${encodeURIComponent(SUB_URL)}&name=${encodeURIComponent('Hercinia-Network')}`;
-      showToast('🚀 正在调起 Clash / FlClash 导入配置...');
+    function showAlert(msg, type = 'info') {
+      const box = document.getElementById('alertMsg');
+      box.className = 'alert-box alert-' + type;
+      box.innerHTML = msg;
+      box.style.display = 'block';
     }
 
-    function importShadowrocket() {
-      const b64 = btoa(SUB_URL);
-      window.location.href = `shadowrocket://add/sub://${b64}?title=${encodeURIComponent('Hercinia-Network')}`;
-      showToast('🚀 正在调起 Shadowrocket 导入配置...');
+    function hideAlert() {
+      document.getElementById('alertMsg').style.display = 'none';
     }
 
-    function importSingbox() {
-      window.location.href = `sing-box://import-remote-profile?url=${encodeURIComponent(SUB_URL)}#Hercinia-Network`;
-      showToast('🚀 正在调起 Sing-box 导入配置...');
+    function openTokenModal() {
+      const saved = localStorage.getItem('gh_token') || '';
+      document.getElementById('tokenInput').value = saved;
+      document.getElementById('tokenModal').style.display = 'flex';
     }
 
-    function importQuantumultX() {
-      const config = { server_remote: [`${SUB_URL}, opt-parser=true, tag=Hercinia-Network`] };
-      window.location.href = `quantumult-x:///update-configuration?remote-resource=${encodeURIComponent(JSON.stringify(config))}`;
-      showToast('🚀 正在调起 Quantumult X 导入配置...');
+    function closeTokenModal() {
+      document.getElementById('tokenModal').style.display = 'none';
     }
 
-    function importSurfboard() {
-      window.location.href = `surfboard:///install-config?url=${encodeURIComponent(SUB_URL)}`;
-      showToast('🚀 正在调起 Surfboard 导入配置...');
-    }
-
-    function handleUserPillClick() {
-      const sessionUser = localStorage.getItem('hercinia_user');
-      if (sessionUser) {
-        // Open user profile modal
-        const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
-        const accountObj = accounts.find(a => a.account.toLowerCase() === sessionUser.toLowerCase()) || { account: sessionUser, auth_expire_time: '--', last_auth_code: '--' };
-        document.getElementById('modalUserEmail').textContent = accountObj.account;
-        document.getElementById('modalUserAvatar').textContent = accountObj.account.charAt(0).toUpperCase();
-        document.getElementById('modalUserCode').textContent = accountObj.last_auth_code || '--';
-        document.getElementById('modalUserTier').textContent = accountObj.used_trial ? 'PRO 会员' : 'VIP 会员';
-        document.getElementById('modalUserExpiry').textContent = accountObj.auth_expire_time || '永久有效';
-        document.getElementById('userProfileModal').style.display = 'flex';
-      } else {
-        openLoginModal();
+    function saveTokenAndTrigger() {
+      const token = document.getElementById('tokenInput').value.trim();
+      if (!token) {
+        alert('请输入有效的 GitHub 访问令牌 (Token)');
+        return;
       }
+      localStorage.setItem('gh_token', token);
+      closeTokenModal();
+      handleManualUpdate();
     }
 
-    function openLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
-    function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
-    function closeUserProfileModal() { document.getElementById('userProfileModal').style.display = 'none'; }
-    function openQrModal() { document.getElementById('qrModal').style.display = 'flex'; }
-    function closeQrModal() { document.getElementById('qrModal').style.display = 'none'; }
-
-    function userLogout() {
-      if (confirm('确定要退出当前账号登录吗？退出后需重新输入凭证或授权码。')) {
-        localStorage.removeItem('hercinia_user');
-        localStorage.removeItem('hercinia_verified_code');
-        closeUserProfileModal();
-        checkAuthGate();
-        showToast('已安全退出登录');
-      }
-    }
-
-    // Fetch Stats & Parse Clash YAML Nodes
-    async function loadStatsAndNodes() {
-      try {
-        const sRes = await fetch('stats.json?_t=' + Date.now());
-        if (sRes.ok) {
-          const sData = await sRes.json();
-          document.getElementById('statAliveCount').textContent = sData.total_alive_nodes || '--';
-          document.getElementById('statAvgDelay').textContent = (sData.average_delay_ms || '--') + ' ms';
-          document.getElementById('statUpdatedAt').textContent = sData.updated_at || '--';
-        }
-      } catch (e) {}
-
-      try {
-        const yRes = await fetch('clash.yaml?_t=' + Date.now());
-        if (yRes.ok) {
-          const text = await yRes.text();
-          parseNodesFromYaml(text);
-        }
-      } catch (e) {}
-    }
-
-    function parseNodesFromYaml(yamlText) {
-      const lines = yamlText.split('\n');
-      const parsed = [];
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (line.trim().startsWith('- name:')) {
-          const raw = line.trim().replace('- name:', '').trim().replace(/^['\"]|['\"]$/g, '');
-          let type = 'VLESS';
-          let delay = 320;
-          const match = raw.match(/\[(.*?)\|(\d+)ms\]/);
-          if (match) {
-            type = match[1];
-            delay = parseInt(match[2]);
-          }
-
-          let flag = '🌐';
-          const upper = raw.toUpperCase();
-          if (raw.includes('美') || upper.includes('US') || upper.includes('UNITED') || raw.includes('🇺🇸')) flag = '🇺🇸';
-          else if (raw.includes('日') || upper.includes('JP') || upper.includes('JAPAN') || raw.includes('🇯🇵')) flag = '🇯🇵';
-          else if (raw.includes('德') || upper.includes('DE') || upper.includes('GERMAN') || raw.includes('🇩🇪')) flag = '🇩🇪';
-          else if (raw.includes('新') || upper.includes('SG') || upper.includes('SINGAPORE') || raw.includes('🇸🇬')) flag = '🇸🇬';
-          else if (raw.includes('港') || upper.includes('HK') || upper.includes('HONG') || raw.includes('🇭🇰')) flag = '🇭🇰';
-          else if (raw.includes('台') || upper.includes('TW') || upper.includes('TAIWAN') || raw.includes('🇹🇼')) flag = '🇹🇼';
-          else if (raw.includes('英') || upper.includes('UK') || upper.includes('GB') || raw.includes('🇬🇧')) flag = '🇬🇧';
-          else if (raw.includes('加') || upper.includes('CA') || upper.includes('CANADA') || raw.includes('🇨🇦')) flag = '🇨🇦';
-          else if (raw.includes('韩') || upper.includes('KR') || upper.includes('KOREA') || raw.includes('🇰🇷')) flag = '🇰🇷';
-
-          let cleanName = raw.replace(/\[.*?\]\s*/, '').trim();
-          cleanName = cleanName.replace(/[\uFFFD\uD800-\uDFFF]+/g, '').replace(/[^\x20-\x7E\u4e00-\u9fa5\u3040-\u30ff\u1100-\u11ff]+/g, ' ').trim();
-          if (!cleanName || cleanName.length < 2) {
-            cleanName = `${flag} ${type} 高速节点 #${parsed.length + 1}`;
-          }
-
-          parsed.push({
-            name: cleanName,
-            raw,
-            type,
-            delay,
-            flag
-          });
-        }
-      }
-
-      allNodes = parsed;
-      document.getElementById('nodeCountBadge').textContent = `${allNodes.length} NODES`;
-      renderNodes(allNodes.slice(0, 60));
-    }
-
-    function renderNodes(nodes) {
-      const grid = document.getElementById('serversGrid');
-      if (!nodes.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">未找到匹配的节点</div>';
+    async function handleManualUpdate() {
+      const token = localStorage.getItem('gh_token');
+      if (!token) {
+        openTokenModal();
         return;
       }
 
-      grid.innerHTML = nodes.map(n => `
-        <div class="server-card">
-          <div class="server-top">
-            <div class="server-title" title="${n.name}">
-              ${n.flag} ${n.name}
-            </div>
-            <div class="status-badge">
-              <span class="status-dot-green"></span> 在线
-            </div>
-          </div>
-          <div class="server-tags">
-            <span class="tag-pill">${n.type}</span>
-            <span class="tag-pill">Reality</span>
-            <span class="tag-pill">1.0x</span>
-          </div>
-          <div class="server-bottom">
-            <span class="server-rate">⚡ 1 倍率</span>
-            <span class="server-delay">${n.delay} ms</span>
-          </div>
-        </div>
-      `).join('');
-    }
+      const btn = document.getElementById('btnTrigger');
+      const btnIcon = document.getElementById('btnIcon');
+      const btnText = document.getElementById('btnText');
+      btn.disabled = true;
+      btnIcon.textContent = '⏳';
+      btnText.textContent = '正在下发云端指令...';
+      showAlert('正在连接 GitHub Actions 触发更新工作流...', 'info');
 
-    function filterNodes() {
-      const q = document.getElementById('nodeSearchInput').value.trim().toLowerCase();
-      if (!q) {
-        renderNodes(allNodes.slice(0, 60));
-        return;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW_ID}/dispatches`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ ref: 'main' })
+        });
+
+        if (res.status === 204 || res.status === 200) {
+          showAlert('✓ 成功下发更新任务！GitHub Actions 云端正在全网抓取并高并发测速...', 'info');
+          btnText.textContent = '云端正在测速中...';
+          startPollingStatus();
+        } else if (res.status === 401 || res.status === 403) {
+          showAlert('✗ 授权失败 (401/403)：当前保存的 GitHub Token 无效或已过期，请重新设置。', 'error');
+          btn.disabled = false;
+          btnIcon.textContent = '🔄';
+          btnText.textContent = '立即手动触发云端更新';
+          openTokenModal();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showAlert(`✗ 触发失败 (${res.status})：${err.message || '未知错误'}`, 'error');
+          btn.disabled = false;
+          btnIcon.textContent = '🔄';
+          btnText.textContent = '立即手动触发云端更新';
+        }
+      } catch (e) {
+        showAlert(`✗ 网络连接错误：${e.message}`, 'error');
+        btn.disabled = false;
+        btnIcon.textContent = '🔄';
+        btnText.textContent = '立即手动触发云端更新';
       }
-      const filtered = allNodes.filter(n => 
-        n.name.toLowerCase().includes(q) || 
-        n.type.toLowerCase().includes(q) || 
-        n.flag.includes(q)
-      );
-      renderNodes(filtered.slice(0, 60));
     }
 
-    // Startup
-    checkAuthGate();
-    loadStatsAndNodes();
+    async function checkLiveStatus() {
+      try {
+        const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/actions/runs?per_page=1`, {
+          cache: 'no-store'
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const run = data.workflow_runs && data.workflow_runs[0];
+        if (!run) return;
+
+        const pill = document.getElementById('statusPill');
+        const pillText = document.getElementById('statusPillText');
+        const btn = document.getElementById('btnTrigger');
+        const btnIcon = document.getElementById('btnIcon');
+        const btnText = document.getElementById('btnText');
+
+        if (run.status === 'in_progress' || run.status === 'queued') {
+          pill.className = 'status-pill running';
+          pillText.textContent = `云端测速中 (#${run.run_number})`;
+          btn.disabled = true;
+          btnIcon.textContent = '⏳';
+          btnText.textContent = `云端测速执行中 (#${run.run_number})...`;
+        } else {
+          pill.className = 'status-pill';
+          pillText.textContent = '云端就绪';
+          btn.disabled = false;
+          btnIcon.textContent = '🔄';
+          btnText.textContent = '立即手动触发云端更新';
+
+          // 若刚完成，拉取最新统计
+          if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+            showAlert('🎉 云端测速与发布已全部完成！最新节点已同步就绪。', 'success');
+            refreshStats();
+          }
+        }
+      } catch (e) {}
+    }
+
+    function startPollingStatus() {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(checkLiveStatus, 4000);
+      checkLiveStatus();
+    }
+
+    async function refreshStats() {
+      try {
+        const res = await fetch(`stats.json?_t=${Date.now()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.total_alive_nodes) {
+            document.getElementById('statAliveCount').textContent = data.total_alive_nodes;
+            document.getElementById('statAvgDelay').textContent = data.average_delay_ms + ' ms';
+            document.getElementById('statUpdatedAt').textContent = data.updated_at;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 初始化检查状态
+    checkLiveStatus();
   </script>
-
-
-
-</body></html>
+</body>
+</html>
