@@ -28,11 +28,12 @@ export async function onRequest(context) {
     });
   }
 
-  // GET: 获取全网最新的授权码列表与已激活用户列表
+  // GET: 获取全网最新的授权码列表与已激活用户列表、全站公告
   if (request.method === 'GET') {
     let codes = await kv.get('hercinia_auth_codes', { type: 'json' });
     let users = await kv.get('hercinia_account_auth', { type: 'json' });
     let deleted = await kv.get('hercinia_deleted_codes', { type: 'json' });
+    let notice = await kv.get('hercinia_notice');
 
     if (!codes) {
       // 首次初始化默认值
@@ -88,12 +89,13 @@ export async function onRequest(context) {
       data: {
         codes: codes || [],
         users: users || [],
-        deleted: deleted || []
+        deleted: deleted || [],
+        notice: notice || ''
       }
     }), { headers: corsHeaders });
   }
 
-  // POST: 站长新建/编辑/删除授权码，或前台用户激活时推送到云端
+  // POST: 站长新建/编辑/删除授权码，或发布全站公告，或前台用户激活时推送到云端
   if (request.method === 'POST') {
     try {
       const payload = await request.json();
@@ -103,10 +105,13 @@ export async function onRequest(context) {
         await kv.put('hercinia_auth_codes', JSON.stringify(data));
       } else if (type === 'save_users' && Array.isArray(data)) {
         await kv.put('hercinia_account_auth', JSON.stringify(data));
+      } else if (type === 'save_notice' && typeof data === 'string') {
+        await kv.put('hercinia_notice', data);
       } else if (type === 'save_all') {
         if (data.codes) await kv.put('hercinia_auth_codes', JSON.stringify(data.codes));
         if (data.users) await kv.put('hercinia_account_auth', JSON.stringify(data.users));
         if (data.deleted) await kv.put('hercinia_deleted_codes', JSON.stringify(data.deleted));
+        if (data.notice !== undefined) await kv.put('hercinia_notice', String(data.notice));
       }
 
       return new Response(JSON.stringify({ success: true, message: 'Cloud sync updated' }), {
