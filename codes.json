@@ -1,0 +1,57 @@
+[
+  {
+    "id": 1,
+    "code": "hercinia888",
+    "package_days": 365,
+    "package_type": "official",
+    "create_time": "2026-10-16 00:00:00",
+    "code_expire_time": "2027-10-16 23:59:59",
+    "status": 0,
+    "bind_account": null,
+    "activate_time": null
+  },
+  {
+    "id": 2,
+    "code": "HERCINIA-TRIAL-01",
+    "package_days": 7,
+    "package_type": "trial",
+    "create_time": "2026-10-16 00:00:00",
+    "code_expire_time": "2027-10-16 23:59:59",
+    "status": 0,
+    "bind_account": null,
+    "activate_time": null
+  },
+  {
+    "id": 3,
+    "code": "HERCINIA-MONTH-01",
+    "package_days": 30,
+    "package_type": "official",
+    "create_time": "2026-10-16 00:00:00",
+    "code_expire_time": "2027-10-16 23:59:59",
+    "status": 0,
+    "bind_account": null,
+    "activate_time": null
+  },
+  {
+    "id": 4,
+    "code": "HERCINIA-QUARTER-01",
+    "package_days": 90,
+    "package_type": "official",
+    "create_time": "2026-10-16 00:00:00",
+    "code_expire_time": "2027-10-16 23:59:59",
+    "status": 0,
+    "bind_account": null,
+    "activate_time": null
+  },
+  {
+    "id": 5,
+    "code": "HERCINIA-YEAR-01",
+    "package_days": 365,
+    "package_type": "official",
+    "create_time": "2026-10-16 00:00:00",
+    "code_expire_time": "2027-10-16 23:59:59",
+    "status": 0,
+    "bind_account": null,
+    "activate_time": null
+  }
+]
