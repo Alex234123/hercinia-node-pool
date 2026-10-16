@@ -623,7 +623,7 @@
       background: var(--surface-container);
       border: 1px solid var(--outline-variant);
       border-radius: 24px;
-      max-width: 520px;
+      max-width: 480px;
       width: 100%;
       padding: 28px;
       box-shadow: 0 24px 48px rgba(0,0,0,0.5);
@@ -631,9 +631,6 @@
       position: relative;
       max-height: 90vh;
       overflow-y: auto;
-    }
-    .modal-dialog-large {
-      max-width: 720px;
     }
     @keyframes modalPop {
       0% { opacity: 0; transform: scale(0.92); }
@@ -727,60 +724,6 @@
       line-height: 1.4;
     }
 
-    /* Admin Specific Table & Metrics */
-    .admin-stat-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .admin-stat-box {
-      background: var(--surface-container-high);
-      border: 1px solid var(--outline-variant);
-      border-radius: 14px;
-      padding: 12px;
-      text-align: center;
-    }
-    .admin-stat-box h4 {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      font-family: var(--font-mono);
-    }
-    .admin-stat-box p {
-      font-family: var(--font-mono);
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: var(--primary);
-      margin-top: 4px;
-    }
-
-    .data-table-container {
-      background: var(--surface-container-high);
-      border: 1px solid var(--outline-variant);
-      border-radius: 14px;
-      overflow-x: auto;
-      max-height: 220px;
-      margin-bottom: 16px;
-    }
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.82rem;
-      text-align: left;
-    }
-    .data-table th, .data-table td {
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--outline-variant);
-    }
-    .data-table th {
-      background: var(--surface-container-highest);
-      color: var(--text-muted);
-      font-family: var(--font-mono);
-      position: sticky;
-      top: 0;
-    }
-
     .toast-message {
       position: fixed;
       bottom: 24px;
@@ -807,7 +750,7 @@
       position: fixed;
       inset: 0;
       z-index: 90;
-      background: rgba(27, 25, 30, 0.94);
+      background: rgba(27, 25, 30, 0.95);
       backdrop-filter: blur(16px);
       display: none;
       align-items: center;
@@ -847,10 +790,9 @@
     </a>
     <div class="app-bar-actions">
       <button class="icon-btn" id="themeToggleBtn" title="切换深色/浅色模式">🌙</button>
-      
-      <div class="user-pill" id="userPill" onclick="openLoginModal()">
-        <span class="user-avatar" id="avatarText">H</span>
-        <span id="userAccountText">2364645344@qq.com</span>
+      <div class="user-pill" id="userPill" onclick="handleUserPillClick()" title="点击查看个人中心 / 退出登录">
+        <span class="user-avatar" id="avatarText">?</span>
+        <span id="userAccountText">未登录</span>
       </div>
     </div>
   </header>
@@ -859,7 +801,7 @@
   <div class="notice-bar" id="noticeBar">
     <div class="notice-content">
       <span class="notice-tag">📢 全站公告</span>
-      <span id="noticeContentText">全新 24/7 边缘节点云池已就绪！采用授权码注册体系，节点每 6 小时自动化探活。</span>
+      <span id="noticeContentText">全新 24/7 边缘节点云池已就绪！采用授权码注册体系，节点自动化探活。</span>
     </div>
     <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.1rem;" onclick="document.getElementById('noticeBar').style.display='none'">✕</button>
   </div>
@@ -871,8 +813,8 @@
     <section class="hero-card">
       <div class="hero-welcome">欢迎回来 · 专属智能网络中枢</div>
       <div class="hero-tier">
-        <span>HERCINIA ULTRA</span>
-        <span class="hero-tier-sub">24/7 全自动多源并发测速</span>
+        <span id="heroTierTitle">HERCINIA VIP</span>
+        <span class="hero-tier-sub" id="heroTierSub">授权订阅生效中</span>
       </div>
 
       <!-- Wave Bar -->
@@ -889,7 +831,7 @@
           </div>
         </div>
         <div class="wave-footer">
-          <span id="trafficUsedText">已消耗: 12.8 GB / 1024 GB (月度配额)</span>
+          <span id="trafficUsedText">已消耗: 12.8 GB / 1024 GB (套餐配额)</span>
           <span id="authCodeBadgeText">已认证 · 授权码生效中</span>
         </div>
       </div>
@@ -910,7 +852,7 @@
         </div>
         <div class="meta-chip">
           <span class="meta-chip-title">授权等级 &amp; 有效期</span>
-          <span class="meta-chip-val" style="color: var(--warning); font-size: 1.15rem;">VIP · 永久有效</span>
+          <span class="meta-chip-val" id="heroTierExpiryText" style="color: var(--warning); font-size: 1.15rem;">--</span>
         </div>
       </div>
     </section>
@@ -940,23 +882,6 @@
           <button class="btn-tonal" onclick="importQuantumultX()">⭕ 导入 Quantumult X</button>
           <button class="btn-tonal" onclick="importSurfboard()">🏄 导入 Surfboard</button>
           <a href="https://pool.hercinia.kdns.fr/clash.yaml" class="btn-tonal" download="">💾 下载 YAML</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- Cloud Trigger & Health Section -->
-    <section class="hero-card" style="padding: 22px 28px; background: var(--surface-container-high);">
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-        <div>
-          <h3 style="font-family: var(--font-serif); font-size: 1.15rem; margin-bottom: 4px;">⚡ 云端高可用测速集群</h3>
-          <p style="color: var(--text-muted); font-size: 0.85rem;">全网 17 个权威订阅多源聚合，150 并发 TCP 真实握手探测存活率。</p>
-        </div>
-        <div style="display: flex; gap: 10px;">
-          <button id="btnTrigger" class="btn-filled" onclick="handleManualUpdate()">
-            <span id="btnIcon">🔄</span>
-            <span id="btnText">触发云端探活测速</span>
-          </button>
-          <button class="btn-tonal" onclick="openTokenModal()">🔑 GitHub PAT</button>
         </div>
       </div>
     </section>
@@ -992,11 +917,11 @@
       <form onsubmit="handleAuthGateSubmit(event)">
         <div class="form-group">
           <label class="form-label">用户账号 / 邮箱</label>
-          <input type="email" id="gateEmail" class="form-control" placeholder="your_email@domain.com" value="2364645344@qq.com" required="">
+          <input type="email" id="gateEmail" class="form-control" placeholder="请输入您的邮箱" required="" autocomplete="email">
         </div>
         <div class="form-group">
           <label class="form-label">专属邀请授权码 (Invite Code)</label>
-          <input type="text" id="gateAuthCode" class="form-control" placeholder="输入站长授权码，例如 hercinia888" value="hercinia888" required="" style="font-family: var(--font-mono); text-align: center; letter-spacing: 2px;">
+          <input type="text" id="gateAuthCode" class="form-control" placeholder="输入站长授权码，例如年付/季付/月付/试用码" required="" style="font-family: var(--font-mono); text-align: center; letter-spacing: 1px;" autocomplete="off">
         </div>
         <button type="submit" class="btn-filled" style="width: 100%; justify-content: center; margin-top: 10px; padding: 12px;">
           🚀 验证并进入机场中枢
@@ -1008,7 +933,7 @@
     </div>
   </div>
 
-  <!-- User Login / Register Modal Dialog -->
+  <!-- User Login / Register Modal Dialog (未登录时弹窗) -->
   <div class="modal-backdrop" id="loginModal">
     <div class="modal-dialog">
       <button class="modal-close-btn" onclick="closeLoginModal()">✕</button>
@@ -1026,11 +951,11 @@
       <form id="authLoginForm" onsubmit="handleUserLoginSubmit(event)">
         <div class="form-group">
           <label class="form-label">用户邮箱</label>
-          <input type="email" id="loginEmail" class="form-control" value="2364645344@qq.com" required="">
+          <input type="email" id="loginEmail" class="form-control" placeholder="请输入登录邮箱" required="" autocomplete="email">
         </div>
         <div class="form-group">
           <label class="form-label">登录密码</label>
-          <input type="password" id="loginPassword" class="form-control" value="jia123feng" required="">
+          <input type="password" id="loginPassword" class="form-control" placeholder="请输入密码" required="" autocomplete="current-password">
         </div>
         <button type="submit" class="btn-filled" style="width: 100%; justify-content: center; margin-top: 10px;">
           进入仪表盘
@@ -1041,15 +966,15 @@
       <form id="authRegisterForm" style="display: none;" onsubmit="handleUserRegisterSubmit(event)">
         <div class="form-group">
           <label class="form-label">注册邮箱</label>
-          <input type="email" id="regEmail" class="form-control" placeholder="your_email@example.com" required="">
+          <input type="email" id="regEmail" class="form-control" placeholder="your_email@example.com" required="" autocomplete="email">
         </div>
         <div class="form-group">
           <label class="form-label">设置密码</label>
-          <input type="password" id="regPassword" class="form-control" placeholder="设置您的登录密码" required="">
+          <input type="password" id="regPassword" class="form-control" placeholder="设置您的登录密码" required="" autocomplete="new-password">
         </div>
         <div class="form-group">
           <label class="form-label">站长授权码 (必填)</label>
-          <input type="text" id="regAuthCode" class="form-control" placeholder="输入站长授权码" required="" style="font-family: var(--font-mono);">
+          <input type="text" id="regAuthCode" class="form-control" placeholder="输入年付/季付/月付/7天试用授权码" required="" style="font-family: var(--font-mono);" autocomplete="off">
           <div class="form-hint">需向站长获取授权邀请码方可完成注册。</div>
         </div>
         <button type="submit" class="btn-filled" style="width: 100%; justify-content: center; margin-top: 10px;">
@@ -1059,140 +984,47 @@
     </div>
   </div>
 
-  <!-- Admin Console Modal (站长管理后台) -->
-  <div class="modal-backdrop" id="adminModal">
-    <div class="modal-dialog modal-dialog-large">
-      <button class="modal-close-btn" onclick="closeAdminModal()">✕</button>
-
-      <!-- Admin Login View -->
-      <div id="adminLoginView">
-        <div class="modal-header-box">
-          <div class="modal-title">🔐 站长管理中枢</div>
-          <div class="modal-sub">请输入站长管理安全密码进入后台</div>
-        </div>
-        <form onsubmit="handleAdminLoginSubmit(event)">
-          <div class="form-group">
-            <label class="form-label">站长安全密码</label>
-            <input type="password" id="adminPwdInput" class="form-control" placeholder="默认: jia123feng" value="jia123feng" required="">
-          </div>
-          <button type="submit" class="btn-filled" style="width:100%; justify-content:center; margin-top:10px;">
-            进入站长后台
-          </button>
-        </form>
+  <!-- User Profile Modal Dialog (已登录时点击右上角用户中心弹出) -->
+  <div class="modal-backdrop" id="userProfileModal">
+    <div class="modal-dialog">
+      <button class="modal-close-btn" onclick="closeUserProfileModal()">✕</button>
+      <div class="modal-header-box">
+        <div class="modal-title">👤 用户中心</div>
+        <div class="modal-sub">个人账号与当前订阅授权状态</div>
       </div>
 
-      <!-- Admin Panel View -->
-      <div id="adminPanelView" style="display: none;">
-        <div class="modal-header-box" style="text-align: left; display: flex; justify-content: space-between; align-items: center;">
+      <div style="background: var(--surface-container-high); border: 1px solid var(--outline-variant); border-radius: 16px; padding: 20px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--outline-variant);">
+          <div class="user-avatar" id="modalUserAvatar" style="width: 44px; height: 44px; font-size: 1.2rem;">U</div>
           <div>
-            <div class="modal-title" style="font-size: 1.4rem;">👑 站长综合控制台</div>
-            <div class="modal-sub">掌控订阅聚合、用户授权码分发与全站探活</div>
-          </div>
-          <button class="btn-tonal" onclick="adminLogout()" style="padding: 4px 12px; font-size: 0.75rem;">退出管理</button>
-        </div>
-
-        <!-- Metrics Overview -->
-        <div class="admin-stat-row">
-          <div class="admin-stat-box">
-            <h4>总授权码数</h4>
-            <p id="admStatCodeCount">3</p>
-          </div>
-          <div class="admin-stat-box">
-            <h4>已激活用户</h4>
-            <p id="admStatUserCount">1</p>
-          </div>
-          <div class="admin-stat-box">
-            <h4>外部聚合源</h4>
-            <p id="admStatSourceCount">18</p>
+            <div style="font-weight: 600; font-size: 1rem; color: var(--text);" id="modalUserEmail">--</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">当前登录账号</div>
           </div>
         </div>
 
-        <!-- Tab Nav Inside Admin -->
-        <div class="tab-nav">
-          <button class="tab-btn active" id="admTab1" onclick="switchAdminTab('codes')">🔑 授权码管理</button>
-          <button class="tab-btn" id="admTab2" onclick="switchAdminTab('sources')">🌐 订阅聚合管理</button>
-          <button class="tab-btn" id="admTab3" onclick="switchAdminTab('users')">👥 用户状态</button>
-          <button class="tab-btn" id="admTab4" onclick="switchAdminTab('notice')">📢 公告设置</button>
-        </div>
-
-        <!-- Section 1: Auth Codes Management -->
-        <div id="admSectionCodes">
-          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-            <input type="text" id="newCodeInput" class="form-control" placeholder="自定义授权码 (留空自动生成)" style="padding: 8px 12px; font-size: 0.85rem;">
-            <button class="btn-filled" onclick="generateNewAuthCode()" style="padding: 8px 16px;">⚡ 生成授权码</button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.85rem;">
+          <div>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">绑定授权码</span>
+            <div style="font-family: var(--font-mono); font-weight: bold; color: var(--primary);" id="modalUserCode">--</div>
           </div>
-          <div class="data-table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>授权码</th>
-                  <th>类型</th>
-                  <th>状态</th>
-                  <th>绑定用户</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody id="authCodeTableBody">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
+          <div>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">套餐档位</span>
+            <div style="font-weight: bold; color: var(--warning);" id="modalUserTier">--</div>
+          </div>
+          <div>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">到期时间</span>
+            <div style="font-family: var(--font-mono);" id="modalUserExpiry">--</div>
+          </div>
+          <div>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">账号状态</span>
+            <div style="color: var(--success); font-weight: 600;">● 正常服务中</div>
           </div>
         </div>
+      </div>
 
-        <!-- Section 2: Aggregated Subscriptions Management -->
-        <div id="admSectionSources" style="display: none;">
-          <div class="form-group">
-            <label class="form-label">一键添加外部订阅源链接 (自动聚合入池)</label>
-            <div style="display: flex; gap: 8px;">
-              <input type="url" id="newSubUrlInput" class="form-control" placeholder="https://example.com/clash.yaml" style="padding: 8px 12px; font-size: 0.85rem;">
-              <button class="btn-filled" onclick="addAggregatedSource()" style="padding: 8px 16px;">➕ 聚合</button>
-            </div>
-            <div class="form-hint">输入的订阅链接将自动汇入节点池，在下次或手动触发探活时聚合为用户的统一订阅。</div>
-          </div>
-          <div class="data-table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>订阅源地址</th>
-                  <th>类型</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody id="sourceTableBody">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Section 3: Users Monitor -->
-        <div id="admSectionUsers" style="display: none;">
-          <div class="data-table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>用户邮箱</th>
-                  <th>使用授权码</th>
-                  <th>本月已用流量</th>
-                  <th>状态</th>
-                </tr>
-              </thead>
-              <tbody id="userTableBody">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Section 4: Notice Edit -->
-        <div id="admSectionNotice" style="display: none;">
-          <div class="form-group">
-            <label class="form-label">全站滚动公告内容</label>
-            <textarea id="noticeTextInput" class="form-control" rows="3" style="resize: vertical;">全新 24/7 边缘节点云池已就绪！采用授权码注册体系，节点每 6 小时自动化探活。</textarea>
-          </div>
-          <button class="btn-filled" onclick="saveAdminNotice()">💾 保存并发布公告</button>
-        </div>
-
+      <div style="display: flex; gap: 12px;">
+        <button class="btn-tonal" onclick="closeUserProfileModal()" style="flex: 1; justify-content: center;">返回仪表盘</button>
+        <button class="btn-filled" onclick="userLogout()" style="flex: 1; justify-content: center; background: var(--danger); color: #fff;">🚪 退出登录</button>
       </div>
     </div>
   </div>
@@ -1214,25 +1046,6 @@
     </div>
   </div>
 
-  <!-- Token Modal Dialog -->
-  <div class="modal-backdrop" id="tokenModal">
-    <div class="modal-dialog">
-      <button class="modal-close-btn" onclick="closeTokenModal()">✕</button>
-      <h3 style="font-family: var(--font-serif); margin-bottom: 8px;">🔐 GitHub 授权凭证 (PAT)</h3>
-      <p style="color: var(--text-muted); font-size: 0.84rem; margin-bottom: 16px; line-height: 1.5;">
-        令牌仅保存在当前浏览器的 LocalStorage 中，用于向 GitHub Actions 发送工作流触发指令。
-      </p>
-      <div class="form-group">
-        <label class="form-label">Personal Access Token (需 workflow 权限)</label>
-        <input type="password" id="tokenInput" class="form-control" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-      </div>
-      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-        <button class="btn-tonal" onclick="closeTokenModal()">取消</button>
-        <button class="btn-filled" onclick="saveTokenAndTrigger()">保存并触发</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Toast Notification -->
   <div class="toast-message" id="toastMsg">✓ 操作成功！</div>
 
@@ -1242,41 +1055,46 @@
   </footer>
 
   <script>
-    const OWNER = 'Alex234123';
-    const REPO = 'hercinia-node-pool';
-    const WORKFLOW_ID = 'update.yml';
     const SUB_URL = 'https://pool.hercinia.kdns.fr/clash.yaml';
     let allNodes = [];
+
+    // Helper: calculate expiration date string (YYYY-MM-DD)
+    function calcExpiry(days) {
+      if (days === 0) return '2099-12-31'; // Permanent
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      return d.toISOString().split('T')[0];
+    }
+
+    // Helper: check if date is expired
+    function isExpired(expiryStr) {
+      if (!expiryStr || expiryStr === '永久有效' || expiryStr.startsWith('2099')) return false;
+      const today = new Date().toISOString().split('T')[0];
+      return today > expiryStr;
+    }
 
     // --- Default Data Initialization (LocalStorage Based DB) ---
     function initDatabase() {
       if (!localStorage.getItem('hercinia_auth_codes')) {
         const defaultCodes = [
-          { code: 'hercinia888', type: '站长特许', status: 'active', user: '2364645344@qq.com', createdAt: '2026-10-16' },
-          { code: 'VIP-7X9Q2M', type: '月付标准', status: 'available', user: '--', createdAt: '2026-10-16' },
-          { code: 'HERCINIA-PRO-2026', type: '年度尊享', status: 'available', user: '--', createdAt: '2026-10-16' }
+          { code: 'hercinia888', type: '年付尊享', plan: 'year', durationDays: 365, expiry: calcExpiry(365), status: 'active', user: '2364645344@qq.com', createdAt: '2026-10-16' },
+          { code: 'HERCINIA-YEAR-01', type: '年付尊享', plan: 'year', durationDays: 365, expiry: calcExpiry(365), status: 'available', user: '--', createdAt: '2026-10-16' },
+          { code: 'HERCINIA-QUARTER-01', type: '季付标准', plan: 'quarter', durationDays: 90, expiry: calcExpiry(90), status: 'available', user: '--', createdAt: '2026-10-16' },
+          { code: 'HERCINIA-MONTH-01', type: '月付标准', plan: 'month', durationDays: 30, expiry: calcExpiry(30), status: 'available', user: '--', createdAt: '2026-10-16' },
+          { code: 'HERCINIA-TRIAL-01', type: '7天试用', plan: 'trial', durationDays: 7, expiry: calcExpiry(7), status: 'available', user: '--', createdAt: '2026-10-16' }
         ];
         localStorage.setItem('hercinia_auth_codes', JSON.stringify(defaultCodes));
       }
 
       if (!localStorage.getItem('hercinia_users_db')) {
         const defaultUsers = [
-          { email: '2364645344@qq.com', pass: 'jia123feng', code: 'hercinia888', traffic: '12.8 GB', status: '正常' }
+          { email: '2364645344@qq.com', pass: 'jia123feng', code: 'hercinia888', planType: '年付尊享', expiry: calcExpiry(365), traffic: '12.8 GB / 1024 GB', status: '正常' }
         ];
         localStorage.setItem('hercinia_users_db', JSON.stringify(defaultUsers));
       }
 
-      if (!localStorage.getItem('hercinia_sources')) {
-        const defaultSources = [
-          { url: 'https://fastly.jsdelivr.net/gh/ermaozi/get_subscribe@main/subscribe/clash.yml', type: 'Clash YAML' },
-          { url: 'https://testingcf.jsdelivr.net/gh/anaer/Sub@main/clash.yaml', type: 'Clash YAML' },
-          { url: 'https://fastly.jsdelivr.net/gh/ripaojiedian/freenode@main/clash', type: 'Base64/YAML' }
-        ];
-        localStorage.setItem('hercinia_sources', JSON.stringify(defaultSources));
-      }
-
       if (!localStorage.getItem('hercinia_notice')) {
-        localStorage.setItem('hercinia_notice', '全新 24/7 边缘节点云池已就绪！采用授权码注册体系，节点每 6 小时自动化探活。');
+        localStorage.setItem('hercinia_notice', '全新 24/7 边缘节点云池已就绪！采用授权码注册体系，节点自动化探活。');
       }
     }
     initDatabase();
@@ -1296,24 +1114,59 @@
     });
     initTheme();
 
-    // --- Authentication & Gate Interception ---
     function checkAuthGate() {
       const sessionUser = localStorage.getItem('hercinia_user');
       const sessionCode = localStorage.getItem('hercinia_verified_code');
       const gate = document.getElementById('authGateOverlay');
 
       if (!sessionUser || !sessionCode) {
+        document.getElementById('userAccountText').textContent = '未登录';
+        document.getElementById('avatarText').textContent = '?';
         gate.style.display = 'flex';
-      } else {
-        gate.style.display = 'none';
-        updateUserUI(sessionUser, sessionCode);
+        return;
       }
+
+      // Check if the auth code is still valid & not expired
+      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+      const match = codes.find(c => c.code.toLowerCase() === sessionCode.toLowerCase());
+
+      if (!match) {
+        alert('您的授权码已被站长移除或不存在，请重新输入有效授权码！');
+        localStorage.removeItem('hercinia_user');
+        localStorage.removeItem('hercinia_verified_code');
+        gate.style.display = 'flex';
+        return;
+      }
+
+      if (isExpired(match.expiry)) {
+        alert(`您的授权码 [${match.code}] (${match.type}) 已于 ${match.expiry} 过期失效！请联系站长续期或更换新授权码。`);
+        localStorage.removeItem('hercinia_user');
+        localStorage.removeItem('hercinia_verified_code');
+        gate.style.display = 'flex';
+        return;
+      }
+
+      gate.style.display = 'none';
+      updateUserUI(sessionUser, match);
     }
 
-    function updateUserUI(user, code) {
+    function updateUserUI(user, codeObj) {
       document.getElementById('userAccountText').textContent = user;
       document.getElementById('avatarText').textContent = user.charAt(0).toUpperCase();
-      document.getElementById('authCodeBadgeText').textContent = `已认证 · 授权码 [${code}]`;
+      document.getElementById('authCodeBadgeText').textContent = `已认证 · 授权码 [${codeObj.code}] (${codeObj.type})`;
+
+      // Reflect Tier and Expiration in the Hero Meta card
+      const tierTitle = `${codeObj.type}`;
+      document.getElementById('heroTierTitle').textContent = `HERCINIA ${tierTitle}`;
+      document.getElementById('heroTierSub').textContent = `有效期至: ${codeObj.expiry}`;
+      document.getElementById('heroTierExpiryText').textContent = `${codeObj.type} · ${codeObj.expiry}`;
+
+      // Calculate traffic allocation according to plan
+      let totalTraffic = '1024 GB';
+      if (codeObj.plan === 'trial') totalTraffic = '50 GB';
+      else if (codeObj.plan === 'month') totalTraffic = '200 GB';
+      else if (codeObj.plan === 'quarter') totalTraffic = '500 GB';
+      document.getElementById('trafficUsedText').textContent = `已消耗: 12.8 GB / ${totalTraffic} (套餐配额)`;
     }
 
     function handleAuthGateSubmit(e) {
@@ -1326,6 +1179,11 @@
 
       if (!match) {
         alert('抱歉，此授权码无效或不存在！请向站长获取正确的授权码。');
+        return;
+      }
+
+      if (isExpired(match.expiry)) {
+        alert(`抱歉，该授权码 [${match.code}] 已于 ${match.expiry} 过期失效，无法用于登录！`);
         return;
       }
 
@@ -1342,7 +1200,7 @@
       localStorage.setItem('hercinia_verified_code', match.code);
 
       document.getElementById('authGateOverlay').style.display = 'none';
-      updateUserUI(email, match.code);
+      updateUserUI(email, match);
       showToast(`✓ 授权码验证成功！欢迎使用，${email}`);
     }
 
@@ -1377,23 +1235,33 @@
       const user = users.find(u => u.email === email && u.pass === pass);
 
       if (!user) {
-        // Fallback for default credentials
+        // Fallback for default account
         if (email === '2364645344@qq.com' && pass === 'jia123feng') {
+          const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+          const defaultCode = codes.find(c => c.code === 'hercinia888') || { code: 'hercinia888', type: '年付尊享', plan: 'year', expiry: calcExpiry(365) };
           localStorage.setItem('hercinia_user', email);
-          localStorage.setItem('hercinia_verified_code', 'hercinia888');
-          updateUserUI(email, 'hercinia888');
+          localStorage.setItem('hercinia_verified_code', defaultCode.code);
+          updateUserUI(email, defaultCode);
           closeLoginModal();
           checkAuthGate();
           showToast(`✓ 登录成功！欢迎回来，${email}`);
           return;
         }
-        alert('账号或密码不正确，若首次使用请凭授权码注册！');
+        alert('账号或密码不正确，若首次使用请凭有效授权码注册！');
+        return;
+      }
+
+      // Check if user's bound auth code is still valid
+      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+      const match = codes.find(c => c.code.toLowerCase() === (user.code || '').toLowerCase());
+      if (!match || isExpired(match.expiry)) {
+        alert(`登录拦截：您绑定的授权码 [${user.code || '--'}] 已失效或过期，无法登录！请联系站长更换授权码。`);
         return;
       }
 
       localStorage.setItem('hercinia_user', user.email);
-      localStorage.setItem('hercinia_verified_code', user.code || 'hercinia888');
-      updateUserUI(user.email, user.code || 'hercinia888');
+      localStorage.setItem('hercinia_verified_code', match.code);
+      updateUserUI(user.email, match);
       closeLoginModal();
       checkAuthGate();
       showToast(`✓ 登录成功！欢迎回来，${user.email}`);
@@ -1409,7 +1277,11 @@
       const match = codes.find(c => c.code.toLowerCase() === code.toLowerCase());
 
       if (!match) {
-        alert('注册失败：授权码无效！');
+        alert('注册失败：授权码无效或不存在！');
+        return;
+      }
+      if (isExpired(match.expiry)) {
+        alert(`注册失败：该授权码已于 ${match.expiry} 过期失效！`);
         return;
       }
       if (match.status === 'used' && match.user !== email) {
@@ -1427,176 +1299,24 @@
       match.user = email;
       localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
 
-      users.push({ email, pass, code: match.code, traffic: '0.1 GB', status: '正常' });
+      users.push({
+        email,
+        pass,
+        code: match.code,
+        planType: match.type,
+        expiry: match.expiry,
+        traffic: '0.1 GB',
+        status: '正常'
+      });
       localStorage.setItem('hercinia_users_db', JSON.stringify(users));
 
       localStorage.setItem('hercinia_user', email);
       localStorage.setItem('hercinia_verified_code', match.code);
 
-      updateUserUI(email, match.code);
+      updateUserUI(email, match);
       closeLoginModal();
       checkAuthGate();
-      showToast(`🎉 凭授权码注册成功！已为您解锁全部节点`);
-    }
-
-    // --- Admin Management Functions ---
-    function openAdminModal() {
-      const isAdm = sessionStorage.getItem('hercinia_admin_logged');
-      if (isAdm === 'true') {
-        showAdminPanel();
-      } else {
-        document.getElementById('adminLoginView').style.display = 'block';
-        document.getElementById('adminPanelView').style.display = 'none';
-      }
-      document.getElementById('adminModal').style.display = 'flex';
-    }
-
-    function closeAdminModal() {
-      document.getElementById('adminModal').style.display = 'none';
-    }
-
-    function handleAdminLoginSubmit(e) {
-      e.preventDefault();
-      const pwd = document.getElementById('adminPwdInput').value.trim();
-      if (pwd === 'jia123feng') {
-        sessionStorage.setItem('hercinia_admin_logged', 'true');
-        showAdminPanel();
-        showToast('👑 站长身份验证通过！进入控制台');
-      } else {
-        alert('站长安全密码错误！');
-      }
-    }
-
-    function showAdminPanel() {
-      document.getElementById('adminLoginView').style.display = 'none';
-      document.getElementById('adminPanelView').style.display = 'block';
-      refreshAdminData();
-    }
-
-    function adminLogout() {
-      sessionStorage.removeItem('hercinia_admin_logged');
-      closeAdminModal();
-      showToast('站长已退出登录');
-    }
-
-    function switchAdminTab(tab) {
-      ['codes', 'sources', 'users', 'notice'].forEach((t, idx) => {
-        const btn = document.getElementById(`admTab${idx+1}`);
-        const sec = document.getElementById(`admSection${t.charAt(0).toUpperCase() + t.slice(1)}`);
-        if (t === tab) {
-          btn.classList.add('active');
-          sec.style.display = 'block';
-        } else {
-          btn.classList.remove('active');
-          sec.style.display = 'none';
-        }
-      });
-    }
-
-    function refreshAdminData() {
-      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-      const users = JSON.parse(localStorage.getItem('hercinia_users_db') || '[]');
-      const sources = JSON.parse(localStorage.getItem('hercinia_sources') || '[]');
-
-      document.getElementById('admStatCodeCount').textContent = codes.length;
-      document.getElementById('admStatUserCount').textContent = users.length;
-      document.getElementById('admStatSourceCount').textContent = sources.length + 15;
-
-      // Render codes table
-      const codeTbody = document.getElementById('authCodeTableBody');
-      codeTbody.innerHTML = codes.map((c, i) => `
-        <tr>
-          <td><strong style="font-family:var(--font-mono); color:var(--primary);">${c.code}</strong></td>
-          <td>${c.type}</td>
-          <td><span style="color:${c.status === 'active' ? 'var(--success)' : 'var(--warning)'};">${c.status === 'active' ? '● 使用中' : '○ 待激活'}</span></td>
-          <td style="font-family:var(--font-mono); font-size:0.75rem;">${c.user}</td>
-          <td>
-            <button class="btn-tonal" style="padding:2px 8px; font-size:0.72rem;" onclick="deleteAuthCode(${i})">删除</button>
-          </td>
-        </tr>
-      `).join('');
-
-      // Render sources table
-      const srcTbody = document.getElementById('sourceTableBody');
-      srcTbody.innerHTML = sources.map((s, i) => `
-        <tr>
-          <td style="font-family:var(--font-mono); font-size:0.75rem; word-break:break-all;">${s.url}</td>
-          <td>${s.type}</td>
-          <td>
-            <button class="btn-tonal" style="padding:2px 8px; font-size:0.72rem;" onclick="deleteSource(${i})">移除</button>
-          </td>
-        </tr>
-      `).join('');
-
-      // Render users table
-      const userTbody = document.getElementById('userTableBody');
-      userTbody.innerHTML = users.map(u => `
-        <tr>
-          <td style="font-family:var(--font-mono);">${u.email}</td>
-          <td style="font-family:var(--font-mono); color:var(--primary);">${u.code || '--'}</td>
-          <td style="font-family:var(--font-mono);">${u.traffic}</td>
-          <td><span style="color:var(--success);">● 正常</span></td>
-        </tr>
-      `).join('');
-
-      // Notice
-      document.getElementById('noticeTextInput').value = localStorage.getItem('hercinia_notice') || '';
-    }
-
-    function generateNewAuthCode() {
-      const custom = document.getElementById('newCodeInput').value.trim();
-      const code = custom || ('HERCINIA-' + Math.random().toString(36).substring(2, 8).toUpperCase());
-
-      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-      codes.unshift({
-        code: code,
-        type: '站长发放',
-        status: 'available',
-        user: '--',
-        createdAt: new Date().toISOString().split('T')[0]
-      });
-
-      localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
-      document.getElementById('newCodeInput').value = '';
-      refreshAdminData();
-      showToast(`✓ 成功生成新授权码: ${code}`);
-    }
-
-    function deleteAuthCode(idx) {
-      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-      codes.splice(idx, 1);
-      localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
-      refreshAdminData();
-      showToast('授权码已作废删除');
-    }
-
-    function addAggregatedSource() {
-      const url = document.getElementById('newSubUrlInput').value.trim();
-      if (!url.startsWith('http')) {
-        alert('请输入以 http/https 开头的有效订阅链接');
-        return;
-      }
-      const sources = JSON.parse(localStorage.getItem('hercinia_sources') || '[]');
-      sources.push({ url, type: '自定义聚合源' });
-      localStorage.setItem('hercinia_sources', JSON.stringify(sources));
-      document.getElementById('newSubUrlInput').value = '';
-      refreshAdminData();
-      showToast('✓ 外部订阅链接已添加！下次探活将自动聚合');
-    }
-
-    function deleteSource(idx) {
-      const sources = JSON.parse(localStorage.getItem('hercinia_sources') || '[]');
-      sources.splice(idx, 1);
-      localStorage.setItem('hercinia_sources', JSON.stringify(sources));
-      refreshAdminData();
-      showToast('已移除该订阅聚合源');
-    }
-
-    function saveAdminNotice() {
-      const txt = document.getElementById('noticeTextInput').value.trim();
-      localStorage.setItem('hercinia_notice', txt);
-      document.getElementById('noticeContentText').textContent = txt;
-      showToast('✓ 全站公告已即时更新上线！');
+      showToast(`🎉 凭 [${match.type}] 授权码注册成功！已解锁全部节点`);
     }
 
     // --- QR Codes & Modals ---
@@ -1662,67 +1382,37 @@
       showToast('🚀 正在调起 Surfboard 导入配置...');
     }
 
+    function handleUserPillClick() {
+      const sessionUser = localStorage.getItem('hercinia_user');
+      const sessionCode = localStorage.getItem('hercinia_verified_code');
+      if (sessionUser && sessionCode) {
+        // Open user profile modal
+        const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+        const match = codes.find(c => c.code.toLowerCase() === sessionCode.toLowerCase()) || { code: sessionCode, type: '标准会员', expiry: '--' };
+        document.getElementById('modalUserEmail').textContent = sessionUser;
+        document.getElementById('modalUserAvatar').textContent = sessionUser.charAt(0).toUpperCase();
+        document.getElementById('modalUserCode').textContent = match.code;
+        document.getElementById('modalUserTier').textContent = match.type;
+        document.getElementById('modalUserExpiry').textContent = match.expiry || '永久有效';
+        document.getElementById('userProfileModal').style.display = 'flex';
+      } else {
+        openLoginModal();
+      }
+    }
+
     function openLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
     function closeLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
+    function closeUserProfileModal() { document.getElementById('userProfileModal').style.display = 'none'; }
     function openQrModal() { document.getElementById('qrModal').style.display = 'flex'; }
     function closeQrModal() { document.getElementById('qrModal').style.display = 'none'; }
-    function openTokenModal() {
-      document.getElementById('tokenInput').value = localStorage.getItem('gh_token') || '';
-      document.getElementById('tokenModal').style.display = 'flex';
-    }
-    function closeTokenModal() { document.getElementById('tokenModal').style.display = 'none'; }
 
-    function saveTokenAndTrigger() {
-      const token = document.getElementById('tokenInput').value.trim();
-      if (!token) {
-        alert('请输入有效的 GitHub 访问令牌');
-        return;
-      }
-      localStorage.setItem('gh_token', token);
-      closeTokenModal();
-      handleManualUpdate();
-    }
-
-    // Trigger Github Workflow
-    async function handleManualUpdate() {
-      const token = localStorage.getItem('gh_token');
-      if (!token) {
-        openTokenModal();
-        return;
-      }
-
-      const btn = document.getElementById('btnTrigger');
-      const btnIcon = document.getElementById('btnIcon');
-      const btnText = document.getElementById('btnText');
-      btn.disabled = true;
-      btnIcon.textContent = '⏳';
-      btnText.textContent = '下发探活指令...';
-
-      try {
-        const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW_ID}/dispatches`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `token ${token}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ ref: 'main' })
-        });
-
-        if (res.status === 204 || res.status === 200) {
-          showToast('✓ 成功触发云端测速工作流！正在进行 150 路并发握手探活...');
-          btnText.textContent = '云端测速执行中...';
-        } else {
-          showToast(`✗ 触发异常 (${res.status})，请核对 Token 权限`);
-          btn.disabled = false;
-          btnIcon.textContent = '🔄';
-          btnText.textContent = '触发云端探活测速';
-        }
-      } catch (e) {
-        showToast('✗ 网络请求错误: ' + e.message);
-        btn.disabled = false;
-        btnIcon.textContent = '🔄';
-        btnText.textContent = '触发云端探活测速';
+    function userLogout() {
+      if (confirm('确定要退出当前账号登录吗？退出后需重新输入凭证或授权码。')) {
+        localStorage.removeItem('hercinia_user');
+        localStorage.removeItem('hercinia_verified_code');
+        closeUserProfileModal();
+        checkAuthGate();
+        showToast('已安全退出登录');
       }
     }
 
