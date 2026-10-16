@@ -390,10 +390,10 @@
           <div>
             <label class="form-label">套餐档位 / 时长</label>
             <select id="newCodePlanSelect" class="form-control" onchange="handlePlanChange()">
-              <option value="year">年付尊享 (365天)</option>
-              <option value="quarter">季付标准 (90天)</option>
-              <option value="month">月付标准 (30天)</option>
-              <option value="trial">7天试用 (7天)</option>
+              <option value="year">年付尊享 (365天 · 正式付费)</option>
+              <option value="quarter">季付标准 (90天 · 正式付费)</option>
+              <option value="month">月付标准 (30天 · 正式付费)</option>
+              <option value="trial">7天试用 (7天 · 终身单次防刷)</option>
               <option value="custom">自定义有效天数</option>
             </select>
           </div>
@@ -401,20 +401,25 @@
             <label class="form-label">自定义有效天数</label>
             <input type="number" id="customDaysInput" class="form-control" value="60" min="1">
           </div>
+          <div>
+            <label class="form-label">码激活有效期 (天内激活)</label>
+            <input type="number" id="newCodeExpireDaysInput" class="form-control" value="30" min="1" placeholder="默认30天内必须激活">
+          </div>
         </div>
-        <button class="btn-filled" onclick="generateNewAuthCode()">⚡ 立即生成授权码</button>
+        <button class="btn-filled" onclick="generateNewAuthCode()">⚡ 立即生成授权码 (单码单次消耗 · 不绑账号)</button>
       </div>
 
       <div class="data-table-container">
         <table class="data-table">
           <thead>
             <tr>
-              <th>授权码 (Invite Code)</th>
-              <th>等级/档位</th>
-              <th>有效时长</th>
-              <th>到期截止日期</th>
+              <th>授权码 (code)</th>
+              <th>套餐天数 / 类型</th>
+              <th>创建时间</th>
+              <th>码激活截止日</th>
               <th>当前状态</th>
-              <th>绑定用户</th>
+              <th>绑定激活账号</th>
+              <th>激活时间</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -457,12 +462,12 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>用户邮箱</th>
-              <th>激活授权码</th>
-              <th>授权套餐档位</th>
-              <th>到期截止日</th>
-              <th>已消耗流量</th>
-              <th>状态/管控</th>
+              <th>用户唯一账号 (account)</th>
+              <th>授权到期时间 (auth_expire_time)</th>
+              <th>最后激活使用的授权码</th>
+              <th>已享用试用</th>
+              <th>账号状态</th>
+              <th>后台管控操作</th>
             </tr>
           </thead>
           <tbody id="userTableBody"></tbody>
@@ -495,17 +500,21 @@
       </div>
       <div class="form-group">
         <label class="form-label">套餐档位</label>
-        <select id="editPlanSelect" class="form-control">
-          <option value="year">年付尊享 (365天)</option>
-          <option value="quarter">季付标准 (90天)</option>
-          <option value="month">月付标准 (30天)</option>
-          <option value="trial">7天试用 (7天)</option>
-          <option value="custom">自定义时长</option>
+        <select id="editPlanSelect" class="form-control" onchange="handleEditPlanChange()">
+          <option value="year">年付尊享 (365天 · 正式付费)</option>
+          <option value="quarter">季付标准 (90天 · 正式付费)</option>
+          <option value="month">月付标准 (30天 · 正式付费)</option>
+          <option value="trial">7天试用 (7天 · 试用套餐)</option>
+          <option value="custom">特许自定义天数</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">到期截止日期 (YYYY-MM-DD)</label>
-        <input type="date" id="editExpiryInput" class="form-control">
+        <label class="form-label">套餐追加时长 (天数)</label>
+        <input type="number" id="editDaysInput" class="form-control" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">授权码激活截止日期 (YYYY-MM-DD HH:mm:ss)</label>
+        <input type="text" id="editCodeExpireInput" class="form-control" placeholder="YYYY-MM-DD HH:mm:ss">
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
         <button class="btn-tonal" onclick="closeEditModal()">取消</button>
@@ -521,37 +530,113 @@
     const REPO = 'hercinia-node-pool';
     const WORKFLOW_ID = 'update.yml';
 
-    // Helper: calculate expiration date string (YYYY-MM-DD)
-    function calcExpiry(days) {
-      if (days === 0) return '2099-12-31';
+    function formatDateTime(d) {
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function calcFutureDateTime(days) {
       const d = new Date();
       d.setDate(d.getDate() + parseInt(days));
-      return d.toISOString().split('T')[0];
+      return formatDateTime(d);
     }
 
-    function isExpired(expiryStr) {
-      if (!expiryStr || expiryStr === '永久有效' || expiryStr.startsWith('2099')) return false;
-      const today = new Date().toISOString().split('T')[0];
-      return today > expiryStr;
+    function isExpiredDateTime(dtStr) {
+      if (!dtStr || dtStr === '永久有效' || dtStr.startsWith('2099')) return false;
+      return new Date() > new Date(dtStr.replace(/-/g, '/'));
     }
 
-    function initDatabase() {
+    async function initDatabase() {
+      // Sync from codes.json if available
+      try {
+        const res = await fetch('../codes.json?_t=' + Date.now());
+        if (res.ok) {
+          const remoteCodes = await res.json();
+          let localCodes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+          remoteCodes.forEach(rc => {
+            const exists = localCodes.find(lc => lc.code.toLowerCase() === rc.code.toLowerCase());
+            if (!exists) {
+              localCodes.push(rc);
+            }
+          });
+          localStorage.setItem('hercinia_auth_codes', JSON.stringify(localCodes));
+        }
+      } catch (e) {}
+
       if (!localStorage.getItem('hercinia_auth_codes')) {
         const defaultCodes = [
-          { code: 'hercinia888', type: '年付尊享', plan: 'year', durationDays: 365, expiry: calcExpiry(365), status: 'active', user: '2364645344@qq.com', createdAt: '2026-10-16' },
-          { code: 'HERCINIA-YEAR-01', type: '年付尊享', plan: 'year', durationDays: 365, expiry: calcExpiry(365), status: 'available', user: '--', createdAt: '2026-10-16' },
-          { code: 'HERCINIA-QUARTER-01', type: '季付标准', plan: 'quarter', durationDays: 90, expiry: calcExpiry(90), status: 'available', user: '--', createdAt: '2026-10-16' },
-          { code: 'HERCINIA-MONTH-01', type: '月付标准', plan: 'month', durationDays: 30, expiry: calcExpiry(30), status: 'available', user: '--', createdAt: '2026-10-16' },
-          { code: 'HERCINIA-TRIAL-01', type: '7天试用', plan: 'trial', durationDays: 7, expiry: calcExpiry(7), status: 'available', user: '--', createdAt: '2026-10-16' }
+          {
+            id: 1,
+            code: 'hercinia888',
+            package_days: 365,
+            package_type: 'official',
+            create_time: '2026-10-16 00:00:00',
+            code_expire_time: '2027-10-16 23:59:59',
+            status: 0,
+            bind_account: null,
+            activate_time: null
+          },
+          {
+            id: 2,
+            code: 'HERCINIA-TRIAL-01',
+            package_days: 7,
+            package_type: 'trial',
+            create_time: '2026-10-16 00:00:00',
+            code_expire_time: '2027-10-16 23:59:59',
+            status: 0,
+            bind_account: null,
+            activate_time: null
+          },
+          {
+            id: 3,
+            code: 'HERCINIA-MONTH-01',
+            package_days: 30,
+            package_type: 'official',
+            create_time: '2026-10-16 00:00:00',
+            code_expire_time: '2027-10-16 23:59:59',
+            status: 0,
+            bind_account: null,
+            activate_time: null
+          },
+          {
+            id: 4,
+            code: 'HERCINIA-QUARTER-01',
+            package_days: 90,
+            package_type: 'official',
+            create_time: '2026-10-16 00:00:00',
+            code_expire_time: '2027-10-16 23:59:59',
+            status: 0,
+            bind_account: null,
+            activate_time: null
+          },
+          {
+            id: 5,
+            code: 'HERCINIA-YEAR-01',
+            package_days: 365,
+            package_type: 'official',
+            create_time: '2026-10-16 00:00:00',
+            code_expire_time: '2027-10-16 23:59:59',
+            status: 0,
+            bind_account: null,
+            activate_time: null
+          }
         ];
         localStorage.setItem('hercinia_auth_codes', JSON.stringify(defaultCodes));
       }
-      if (!localStorage.getItem('hercinia_users_db')) {
-        const defaultUsers = [
-          { email: '2364645344@qq.com', pass: 'jia123feng', code: 'hercinia888', planType: '年付尊享', expiry: calcExpiry(365), traffic: '12.8 GB / 1024 GB', status: '正常' }
+
+      if (!localStorage.getItem('hercinia_account_auth')) {
+        const defaultAccounts = [
+          {
+            id: 1,
+            account: '2364645344@qq.com',
+            auth_expire_time: '2027-10-16 23:59:59',
+            last_auth_code: 'hercinia888',
+            used_trial: false
+          }
         ];
-        localStorage.setItem('hercinia_users_db', JSON.stringify(defaultUsers));
+        localStorage.setItem('hercinia_account_auth', JSON.stringify(defaultAccounts));
       }
+
       if (!localStorage.getItem('hercinia_sources')) {
         const defaultSources = [
           { url: 'https://fastly.jsdelivr.net/gh/ermaozi/get_subscribe@main/subscribe/clash.yml', type: 'Clash YAML', status: '在线 (200 OK)' },
@@ -560,6 +645,7 @@
         ];
         localStorage.setItem('hercinia_sources', JSON.stringify(defaultSources));
       }
+
       if (!localStorage.getItem('hercinia_notice')) {
         localStorage.setItem('hercinia_notice', '全新 24/7 边缘节点云池已就绪！采用授权码注册体系，节点每 6 小时自动化探活。');
       }
@@ -626,34 +712,63 @@
       w.style.display = p === 'custom' ? 'block' : 'none';
     }
 
+    function handleEditPlanChange() {
+      const p = document.getElementById('editPlanSelect').value;
+      const daysInp = document.getElementById('editDaysInput');
+      if (p === 'year') daysInp.value = 365;
+      else if (p === 'quarter') daysInp.value = 90;
+      else if (p === 'month') daysInp.value = 30;
+      else if (p === 'trial') daysInp.value = 7;
+    }
+
     function refreshData() {
       const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-      const users = JSON.parse(localStorage.getItem('hercinia_users_db') || '[]');
+      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
       const sources = JSON.parse(localStorage.getItem('hercinia_sources') || '[]');
 
+      // Auto update status 3 for expired codes
+      codes.forEach(c => {
+        if (c.status === 0 && isExpiredDateTime(c.code_expire_time)) {
+          c.status = 3; // 码过期
+        }
+      });
+      localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
+
       document.getElementById('admStatCodeCount').textContent = codes.length;
-      document.getElementById('admStatUserCount').textContent = users.length;
+      document.getElementById('admStatUserCount').textContent = accounts.length;
       document.getElementById('admStatSourceCount').textContent = sources.length + 15;
 
       // Codes Table
       const codeTbody = document.getElementById('authCodeTableBody');
       codeTbody.innerHTML = codes.map((c, i) => {
-        const expired = isExpired(c.expiry);
-        const statusBadge = expired
-          ? '<span style="color:var(--danger);">✕ 已过期失效</span>'
-          : (c.status === 'active' ? '<span style="color:var(--success);">● 使用中</span>' : '<span style="color:var(--warning);">○ 待激活</span>');
+        let statusHtml = '';
+        if (c.status === 0) {
+          statusHtml = '<span style="color:var(--success);">● 未使用 (有效)</span>';
+        } else if (c.status === 1) {
+          statusHtml = '<span style="color:var(--text-muted);">✓ 已使用 (已绑定)</span>';
+        } else if (c.status === 2) {
+          statusHtml = '<span style="color:var(--danger);">✕ 手动作废</span>';
+        } else if (c.status === 3) {
+          statusHtml = '<span style="color:var(--warning);">⌛ 码已过期</span>';
+        }
+
+        const typeBadge = c.package_type === 'trial' 
+          ? '<span class="tag-pill" style="border-color:var(--warning); color:var(--warning);">试用套餐</span>'
+          : '<span class="tag-pill">正式付费</span>';
 
         return `
           <tr>
             <td><strong style="font-family:var(--font-mono); color:var(--primary); font-size:0.95rem;">${c.code}</strong></td>
-            <td><span class="tag-pill">${c.type}</span></td>
-            <td>${c.durationDays || '--'} 天</td>
-            <td style="font-family:var(--font-mono); font-size:0.82rem; ${expired ? 'color:var(--danger);' : ''}">${c.expiry || '--'}</td>
-            <td>${statusBadge}</td>
-            <td style="font-family:var(--font-mono); font-size:0.8rem;">${c.user}</td>
+            <td>${typeBadge} (${c.package_days}天)</td>
+            <td style="font-family:var(--font-mono); font-size:0.75rem;">${c.create_time || '--'}</td>
+            <td style="font-family:var(--font-mono); font-size:0.75rem; ${isExpiredDateTime(c.code_expire_time) ? 'color:var(--danger);' : ''}">${c.code_expire_time || '--'}</td>
+            <td>${statusHtml}</td>
+            <td style="font-family:var(--font-mono); font-size:0.8rem;">${c.bind_account || '<span style="color:var(--text-muted);">未绑定</span>'}</td>
+            <td style="font-family:var(--font-mono); font-size:0.75rem;">${c.activate_time || '--'}</td>
             <td style="white-space:nowrap;">
               <button class="btn-tonal" style="padding:3px 10px; font-size:0.75rem; margin-right:4px;" onclick="openEditModal(${i})">✏️ 编辑</button>
-              <button class="btn-tonal" style="padding:3px 10px; font-size:0.75rem; color:var(--danger);" onclick="deleteAuthCode(${i})">作废</button>
+              ${c.status === 0 ? `<button class="btn-tonal" style="padding:3px 10px; font-size:0.75rem; color:var(--danger);" onclick="revokeAuthCode(${i})">作废</button>` : ''}
+              <button class="btn-tonal" style="padding:3px 10px; font-size:0.75rem; color:var(--danger);" onclick="deleteAuthCode(${i})">删除</button>
             </td>
           </tr>
         `;
@@ -673,20 +788,22 @@
         </tr>
       `).join('');
 
-      // Users Table
+      // Users / Accounts Table
       const userTbody = document.getElementById('userTableBody');
-      userTbody.innerHTML = users.map((u, i) => {
-        const expired = isExpired(u.expiry);
+      userTbody.innerHTML = accounts.map((u, i) => {
+        const expired = isExpiredDateTime(u.auth_expire_time);
         return `
           <tr>
-            <td style="font-family:var(--font-mono);">${u.email}</td>
-            <td style="font-family:var(--font-mono); color:var(--primary); font-weight:bold;">${u.code || '--'}</td>
-            <td>${u.planType || '年付尊享'}</td>
-            <td style="font-family:var(--font-mono); font-size:0.8rem; ${expired ? 'color:var(--danger);' : ''}">${u.expiry || '2027-10-16'}</td>
-            <td style="font-family:var(--font-mono);">${u.traffic}</td>
+            <td style="font-family:var(--font-mono); font-weight:600;">${u.account}</td>
+            <td style="font-family:var(--font-mono); font-size:0.85rem; ${expired ? 'color:var(--danger); font-weight:bold;' : 'color:var(--success);'}">${u.auth_expire_time || '--'}</td>
+            <td style="font-family:var(--font-mono); color:var(--primary); font-size:0.85rem;">${u.last_auth_code || '--'}</td>
+            <td>${u.used_trial ? '<span style="color:var(--warning);">是 (防刷锁定)</span>' : '<span style="color:var(--text-muted);">否</span>'}</td>
             <td>
-              ${expired ? '<span style="color:var(--danger);">已停机 (已到期)</span>' : '<span style="color:var(--success);">● 正常运行</span>'}
-              <button class="btn-tonal" style="padding:2px 8px; font-size:0.72rem; margin-left:6px;" onclick="renewUser(${i})">延期续费</button>
+              ${expired ? '<span style="color:var(--danger);">⛔ 授权到期禁止登录</span>' : '<span style="color:var(--success);">● 正常允许登录</span>'}
+            </td>
+            <td>
+              <button class="btn-tonal" style="padding:2px 8px; font-size:0.72rem; margin-right:6px;" onclick="renewAccount(${i})">➕ 追加时长</button>
+              <button class="btn-tonal" style="padding:2px 8px; font-size:0.72rem; color:var(--danger);" onclick="forceExpireAccount(${i})">清空授权强制下线</button>
             </td>
           </tr>
         `;
@@ -699,37 +816,49 @@
     function generateNewAuthCode() {
       const custom = document.getElementById('newCodeInput').value.trim();
       const plan = document.getElementById('newCodePlanSelect').value;
+      const expireDays = parseInt(document.getElementById('newCodeExpireDaysInput').value) || 30;
 
-      let planName = '年付尊享';
-      let days = 365;
+      let package_type = 'official';
+      let package_days = 365;
 
-      if (plan === 'quarter') { planName = '季付标准'; days = 90; }
-      else if (plan === 'month') { planName = '月付标准'; days = 30; }
-      else if (plan === 'trial') { planName = '7天试用'; days = 7; }
+      if (plan === 'quarter') { package_type = 'official'; package_days = 90; }
+      else if (plan === 'month') { package_type = 'official'; package_days = 30; }
+      else if (plan === 'trial') { package_type = 'trial'; package_days = 7; }
       else if (plan === 'custom') {
-        days = parseInt(document.getElementById('customDaysInput').value) || 30;
-        planName = `特许 (${days}天)`;
+        package_days = parseInt(document.getElementById('customDaysInput').value) || 30;
+        package_type = 'official';
       }
 
       const prefixMap = { year: 'YEAR', quarter: 'QUARTER', month: 'MONTH', trial: 'TRIAL', custom: 'VIP' };
       const code = custom || (`HERCINIA-${prefixMap[plan] || 'VIP'}-` + Math.random().toString(36).substring(2, 7).toUpperCase());
 
       const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+      
+      // Check code uniqueness
+      if (codes.find(c => c.code.toLowerCase() === code.toLowerCase())) {
+        alert('授权码已存在，请更换！');
+        return;
+      }
+
+      const newId = codes.length > 0 ? Math.max(...codes.map(c => c.id || 0)) + 1 : 1;
+      const nowStr = formatDateTime(new Date());
+
       codes.unshift({
+        id: newId,
         code: code,
-        type: planName,
-        plan: plan,
-        durationDays: days,
-        expiry: calcExpiry(days),
-        status: 'available',
-        user: '--',
-        createdAt: new Date().toISOString().split('T')[0]
+        package_days: package_days,
+        package_type: package_type,
+        create_time: nowStr,
+        code_expire_time: calcFutureDateTime(expireDays),
+        status: 0, // 0=未使用
+        bind_account: null,
+        activate_time: null
       });
 
       localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
       document.getElementById('newCodeInput').value = '';
       refreshData();
-      showToast(`✓ 成功生成【${planName}】授权码: ${code}`);
+      showToast(`✓ 成功生成未绑定授权码: ${code} (${package_days}天 · ${package_type})`);
     }
 
     function openEditModal(idx) {
@@ -737,8 +866,16 @@
       const c = codes[idx];
       document.getElementById('editIndexInput').value = idx;
       document.getElementById('editCodeInput').value = c.code;
-      document.getElementById('editPlanSelect').value = c.plan || 'year';
-      document.getElementById('editExpiryInput').value = c.expiry || calcExpiry(365);
+      
+      let planVal = 'custom';
+      if (c.package_days === 365) planVal = 'year';
+      else if (c.package_days === 90) planVal = 'quarter';
+      else if (c.package_days === 30) planVal = 'month';
+      else if (c.package_days === 7 && c.package_type === 'trial') planVal = 'trial';
+
+      document.getElementById('editPlanSelect').value = planVal;
+      document.getElementById('editDaysInput').value = c.package_days;
+      document.getElementById('editCodeExpireInput').value = c.code_expire_time || '';
       document.getElementById('editModal').style.display = 'flex';
     }
 
@@ -753,40 +890,64 @@
 
       const codeStr = document.getElementById('editCodeInput').value.trim();
       const plan = document.getElementById('editPlanSelect').value;
-      const expiry = document.getElementById('editExpiryInput').value;
-
-      const planMap = { year: '年付尊享', quarter: '季付标准', month: '月付标准', trial: '7天试用', custom: '特许自定义' };
+      const days = parseInt(document.getElementById('editDaysInput').value) || 30;
+      const codeExpiry = document.getElementById('editCodeExpireInput').value.trim();
 
       codes[idx].code = codeStr;
-      codes[idx].plan = plan;
-      codes[idx].type = planMap[plan] || '自定义档位';
-      codes[idx].expiry = expiry;
+      codes[idx].package_days = days;
+      codes[idx].package_type = (plan === 'trial') ? 'trial' : 'official';
+      codes[idx].code_expire_time = codeExpiry;
 
       localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
       closeEditModal();
       refreshData();
-      showToast(`✓ 授权码 [${codeStr}] 档位与有效期更新成功！`);
+      showToast(`✓ 授权码 [${codeStr}] 档位与有效期修改成功！`);
+    }
+
+    function revokeAuthCode(idx) {
+      if (!confirm('确定将此授权码手动作废吗？作废后无法被任何人激活！')) return;
+      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+      codes[idx].status = 2; // 2=手动作废
+      localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
+      refreshData();
+      showToast('授权码已手动作废！');
     }
 
     function deleteAuthCode(idx) {
-      if (!confirm('确定作废并删除此授权码吗？绑定该码的用户将即时无法登录！')) return;
+      if (!confirm('确定彻底从数据库删除此授权码吗？')) return;
       const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
       codes.splice(idx, 1);
       localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
       refreshData();
-      showToast('授权码已作废删除');
+      showToast('授权码已删除');
     }
 
-    function renewUser(idx) {
-      const users = JSON.parse(localStorage.getItem('hercinia_users_db') || '[]');
-      if (!users[idx]) return;
-      const addedDays = prompt('请输入延长天数 (例如: 30 / 90 / 365):', '30');
-      if (!addedDays || isNaN(addedDays)) return;
+    function renewAccount(idx) {
+      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
+      if (!accounts[idx]) return;
+      const added = prompt('请输入追加天数 (例如: 30 / 90 / 365):', '30');
+      if (!added || isNaN(added)) return;
 
-      users[idx].expiry = calcExpiry(parseInt(addedDays));
-      localStorage.setItem('hercinia_users_db', JSON.stringify(users));
+      const now = new Date();
+      let currentExp = accounts[idx].auth_expire_time ? new Date(accounts[idx].auth_expire_time.replace(/-/g, '/')) : null;
+      let baseDate = (currentExp && currentExp > now) ? currentExp : now;
+      baseDate.setDate(baseDate.getDate() + parseInt(added));
+
+      accounts[idx].auth_expire_time = formatDateTime(baseDate);
+      localStorage.setItem('hercinia_account_auth', JSON.stringify(accounts));
       refreshData();
-      showToast(`✓ 已为用户 ${users[idx].email} 成功延期！`);
+      showToast(`✓ 已为账号 ${accounts[idx].account} 成功追加 ${added} 天！`);
+    }
+
+    function forceExpireAccount(idx) {
+      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
+      if (!accounts[idx]) return;
+      if (!confirm(`确定强制清空账号 [${accounts[idx].account}] 的授权吗？该账号将立即到期被禁止登录！`)) return;
+
+      accounts[idx].auth_expire_time = '2000-01-01 00:00:00';
+      localStorage.setItem('hercinia_account_auth', JSON.stringify(accounts));
+      refreshData();
+      showToast(`✓ 账号 ${accounts[idx].account} 授权已清空，已被强制下线！`);
     }
 
     async function testSourceConnectivity(encodedUrl) {
@@ -876,6 +1037,7 @@
     checkAdminSession();
     fetchStats();
   </script>
+
 
 
 </body></html>
