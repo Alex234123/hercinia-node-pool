@@ -909,21 +909,27 @@
   <div id="authGateOverlay" style="display: flex;">
     <div class="auth-gate-box">
       <div style="font-size: 3rem; margin-bottom: 12px;">🛡️</div>
-      <h2 style="font-family: var(--font-serif); font-size: 1.6rem; color: var(--primary); margin-bottom: 8px;">用户授权码验证</h2>
-      <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 24px;">
-        本节点池机场中枢实行授权码邀请制。请输入站长下发的专属授权码注册或解锁仪表盘。
+      <h2 style="font-family: var(--font-serif); font-size: 1.6rem; color: var(--primary); margin-bottom: 8px;" id="gateTitle">用户验证与授权中心</h2>
+      <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 24px;" id="gateDesc">
+        请输入您的账号。有效授权用户可直接一键登录；新用户或授权已到期账号请输入授权码激活。
       </p>
 
       <form onsubmit="handleAuthGateSubmit(event)">
         <div class="form-group">
           <label class="form-label">用户账号 / 邮箱</label>
-          <input type="email" id="gateEmail" class="form-control" placeholder="请输入您的邮箱" required="" autocomplete="email">
+          <input type="email" id="gateEmail" class="form-control" placeholder="请输入您的邮箱" required="" autocomplete="email" oninput="checkGateAccountStatus()">
         </div>
-        <div class="form-group">
+
+        <!-- Dynamic Account Auth Status Badge -->
+        <div id="gateAccountStatusTip" style="display: none; margin-bottom: 16px; padding: 10px 14px; border-radius: 12px; font-size: 0.82rem; text-align: left;"></div>
+
+        <div class="form-group" id="gateAuthCodeGroup">
           <label class="form-label">专属邀请授权码 (Invite Code)</label>
-          <input type="text" id="gateAuthCode" class="form-control" placeholder="输入站长授权码，例如年付/季付/月付/试用码" required="" style="font-family: var(--font-mono); text-align: center; letter-spacing: 1px;" autocomplete="off">
+          <input type="text" id="gateAuthCode" class="form-control" placeholder="输入站长授权码，例如年付/季付/月付/试用码" style="font-family: var(--font-mono); text-align: center; letter-spacing: 1px;" autocomplete="off">
+          <div class="form-hint" id="gateCodeHint">新用户激活或授权到期续期使用。</div>
         </div>
-        <button type="submit" class="btn-filled" style="width: 100%; justify-content: center; margin-top: 10px; padding: 12px;">
+
+        <button type="submit" class="btn-filled" id="gateSubmitBtn" style="width: 100%; justify-content: center; margin-top: 10px; padding: 12px;">
           🚀 验证并进入机场中枢
         </button>
       </form>
@@ -1309,11 +1315,87 @@
       return { success: true, account: accountObj, code: codeObj };
     }
 
+    function checkGateAccountStatus() {
+      const email = document.getElementById('gateEmail').value.trim();
+      const codeGroup = document.getElementById('gateAuthCodeGroup');
+      const codeInput = document.getElementById('gateAuthCode');
+      const submitBtn = document.getElementById('gateSubmitBtn');
+      const tipBox = document.getElementById('gateAccountStatusTip');
+
+      if (!email || !email.includes('@')) {
+        codeGroup.style.display = 'block';
+        codeInput.required = true;
+        submitBtn.innerHTML = '🚀 验证并进入机场中枢';
+        submitBtn.style.background = 'var(--primary)';
+        tipBox.style.display = 'none';
+        return;
+      }
+
+      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
+      const accountObj = accounts.find(a => a.account.toLowerCase() === email.toLowerCase());
+
+      if (accountObj && !isExpiredDateTime(accountObj.auth_expire_time)) {
+        // ✅ 匹配到后台已激活且在有效期内的账号：隐藏授权码输入框，允许直接登录
+        codeGroup.style.display = 'none';
+        codeInput.required = false;
+        codeInput.value = '';
+        submitBtn.innerHTML = `⚡ 授权有效 · 直接登录账号`;
+        submitBtn.style.background = 'var(--success)';
+        tipBox.style.display = 'block';
+        tipBox.style.background = 'rgba(158, 208, 138, 0.12)';
+        tipBox.style.border = '1px solid rgba(158, 208, 138, 0.3)';
+        tipBox.style.color = 'var(--success)';
+        tipBox.innerHTML = `✓ 检测到有效授权账号！有效期至: <strong>${accountObj.auth_expire_time}</strong>，无需输入授权码，点击下方按钮直接登录。`;
+      } else if (accountObj && isExpiredDateTime(accountObj.auth_expire_time)) {
+        // ❌ 账号存在但已过期：需要新授权码激活
+        codeGroup.style.display = 'block';
+        codeInput.required = true;
+        submitBtn.innerHTML = '🔄 激活新授权码恢复登录';
+        submitBtn.style.background = 'var(--warning)';
+        tipBox.style.display = 'block';
+        tipBox.style.background = 'rgba(235, 199, 111, 0.12)';
+        tipBox.style.border = '1px solid rgba(235, 199, 111, 0.3)';
+        tipBox.style.color = 'var(--warning)';
+        tipBox.innerHTML = `⚠️ 该账号授权已于 <strong>${accountObj.auth_expire_time}</strong> 到期，请输入新授权码激活续期。`;
+      } else {
+        // ℹ️ 全新未注册账号：需要授权码完成注册
+        codeGroup.style.display = 'block';
+        codeInput.required = true;
+        submitBtn.innerHTML = '🚀 凭授权码激活并进入';
+        submitBtn.style.background = 'var(--primary)';
+        tipBox.style.display = 'none';
+      }
+    }
+
     function handleAuthGateSubmit(e) {
       e.preventDefault();
       const email = document.getElementById('gateEmail').value.trim();
       const code = document.getElementById('gateAuthCode').value.trim();
 
+      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
+      const accountObj = accounts.find(a => a.account.toLowerCase() === email.toLowerCase());
+
+      // 如果账号存在且仍在授权有效期内，直接登录！无需输入授权码
+      if (accountObj && !isExpiredDateTime(accountObj.auth_expire_time) && !code) {
+        localStorage.setItem('hercinia_user', accountObj.account);
+        localStorage.setItem('hercinia_verified_code', accountObj.last_auth_code || '');
+        document.getElementById('authGateOverlay').style.display = 'none';
+        updateUserUI(accountObj);
+        showToast(`✓ 欢迎回来！账号授权有效至: ${accountObj.auth_expire_time}`);
+        return;
+      }
+
+      // 如果未输入授权码
+      if (!code) {
+        if (accountObj && isExpiredDateTime(accountObj.auth_expire_time)) {
+          alert('授权已到期，请输入新授权码激活');
+        } else {
+          alert('请输入站长授权码');
+        }
+        return;
+      }
+
+      // 输入了授权码，执行激活/续期逻辑
       const result = activateAuthCode(email, code);
       if (!result.success) {
         alert(result.message);
