@@ -1087,9 +1087,11 @@
         if (res.ok) {
           const remoteCodes = await res.json();
           let localCodes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+          const deletedCodes = JSON.parse(localStorage.getItem('hercinia_deleted_codes') || '[]');
           remoteCodes.forEach(rc => {
+            const isDeleted = deletedCodes.includes(rc.code.toLowerCase());
             const exists = localCodes.find(lc => lc.code.toLowerCase() === rc.code.toLowerCase());
-            if (!exists) {
+            if (!exists && !isDeleted) {
               localCodes.push(rc);
             }
           });
