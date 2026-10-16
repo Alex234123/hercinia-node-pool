@@ -553,9 +553,11 @@
         if (res.ok) {
           const remoteCodes = await res.json();
           let localCodes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+          const deletedCodes = JSON.parse(localStorage.getItem('hercinia_deleted_codes') || '[]');
           remoteCodes.forEach(rc => {
+            const isDeleted = deletedCodes.includes(rc.code.toLowerCase());
             const exists = localCodes.find(lc => lc.code.toLowerCase() === rc.code.toLowerCase());
-            if (!exists) {
+            if (!exists && !isDeleted) {
               localCodes.push(rc);
             }
           });
@@ -916,10 +918,18 @@
     function deleteAuthCode(idx) {
       if (!confirm('确定彻底从数据库删除此授权码吗？')) return;
       const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+      const target = codes[idx];
+      if (target) {
+        const deletedCodes = JSON.parse(localStorage.getItem('hercinia_deleted_codes') || '[]');
+        if (!deletedCodes.includes(target.code.toLowerCase())) {
+          deletedCodes.push(target.code.toLowerCase());
+          localStorage.setItem('hercinia_deleted_codes', JSON.stringify(deletedCodes));
+        }
+      }
       codes.splice(idx, 1);
       localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
       refreshData();
-      showToast('授权码已删除');
+      showToast('授权码已彻底删除！');
     }
 
     function renewAccount(idx) {
