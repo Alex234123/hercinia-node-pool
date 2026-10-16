@@ -566,25 +566,6 @@
         }
       } catch (e) {}
 
-    // Cloudflare KV Cloud Sync Helper
-    async function syncToCloud() {
-      try {
-        const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-        const users = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
-        const deleted = JSON.parse(localStorage.getItem('hercinia_deleted_codes') || '[]');
-        await fetch('/api/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'save_all',
-            data: { codes, users, deleted }
-          })
-        });
-      } catch (err) {
-        console.warn('Cloud sync error:', err);
-      }
-    }
-
       // Fallback: Sync from codes.json if available
       try {
         const res = await fetch('../codes.json?_t=' + Date.now());
@@ -691,6 +672,25 @@
       }
     }
     initDatabase();
+
+    // Cloudflare KV Cloud Sync Helper (全局跨端同步器)
+    async function syncToCloud() {
+      try {
+        const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+        const users = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
+        const deleted = JSON.parse(localStorage.getItem('hercinia_deleted_codes') || '[]');
+        await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'save_all',
+            data: { codes, users, deleted }
+          })
+        });
+      } catch (err) {
+        console.warn('Cloud sync error:', err);
+      }
+    }
 
     function showToast(msg) {
       const toast = document.getElementById('toastMsg');
