@@ -917,7 +917,12 @@
       <form onsubmit="handleAuthGateSubmit(event)">
         <div class="form-group">
           <label class="form-label">用户账号 / 邮箱</label>
-          <input type="email" id="gateEmail" class="form-control" placeholder="请输入您的邮箱" required="" autocomplete="email" oninput="checkGateAccountStatus()">
+          <div style="display: flex; gap: 8px;">
+            <input type="email" id="gateEmail" class="form-control" placeholder="请输入您的邮箱" required="" autocomplete="email" oninput="checkGateAccountStatus(false)" style="flex: 1;">
+            <button type="button" class="btn-tonal" id="btnCheckAccount" onclick="checkGateAccountStatus(true)" style="padding: 0 16px; white-space: nowrap; font-size: 0.85rem;" title="手动检查账号是否存在有效授权">
+              🔍 检查
+            </button>
+          </div>
         </div>
 
         <!-- Dynamic Account Auth Status Badge -->
@@ -1315,7 +1320,7 @@
       return { success: true, account: accountObj, code: codeObj };
     }
 
-    function checkGateAccountStatus() {
+    function checkGateAccountStatus(isManual = false) {
       const email = document.getElementById('gateEmail').value.trim();
       const codeGroup = document.getElementById('gateAuthCodeGroup');
       const codeInput = document.getElementById('gateAuthCode');
@@ -1328,6 +1333,9 @@
         submitBtn.innerHTML = '🚀 验证并进入机场中枢';
         submitBtn.style.background = 'var(--primary)';
         tipBox.style.display = 'none';
+        if (isManual) {
+          showToast('请先输入有效的邮箱账号！');
+        }
         return;
       }
 
@@ -1346,6 +1354,9 @@
         tipBox.style.border = '1px solid rgba(158, 208, 138, 0.3)';
         tipBox.style.color = 'var(--success)';
         tipBox.innerHTML = `✓ 检测到有效授权账号！有效期至: <strong>${accountObj.auth_expire_time}</strong>，无需输入授权码，点击下方按钮直接登录。`;
+        if (isManual) {
+          showToast(`✓ 检测成功：账号有效授权至 ${accountObj.auth_expire_time}`);
+        }
       } else if (accountObj && isExpiredDateTime(accountObj.auth_expire_time)) {
         // ❌ 账号存在但已过期：需要新授权码激活
         codeGroup.style.display = 'block';
@@ -1357,6 +1368,9 @@
         tipBox.style.border = '1px solid rgba(235, 199, 111, 0.3)';
         tipBox.style.color = 'var(--warning)';
         tipBox.innerHTML = `⚠️ 该账号授权已于 <strong>${accountObj.auth_expire_time}</strong> 到期，请输入新授权码激活续期。`;
+        if (isManual) {
+          showToast('⚠️ 该账号授权已到期，需输入授权码续费！');
+        }
       } else {
         // ℹ️ 全新未注册账号：需要授权码完成注册
         codeGroup.style.display = 'block';
@@ -1364,6 +1378,9 @@
         submitBtn.innerHTML = '🚀 凭授权码激活并进入';
         submitBtn.style.background = 'var(--primary)';
         tipBox.style.display = 'none';
+        if (isManual) {
+          showToast('ℹ️ 未查询到此账号，新账号请凭授权码激活进入！');
+        }
       }
     }
 
