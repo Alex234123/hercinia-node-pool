@@ -18,6 +18,9 @@ import aiohttp
 import yaml
 
 SOURCES = [
+    # Dedicated fast subscription source
+    "https://node.hercinia-fast.kdns.fr/sub?token=2eff9965b7ac4338d22c115ce9c55894&clash",
+
     # ermaozi/get_subscribe — multiple CDN mirrors
     "https://testingcf.jsdelivr.net/gh/ermaozi/get_subscribe@main/subscribe/clash.yml",
     "https://fastly.jsdelivr.net/gh/ermaozi/get_subscribe@main/subscribe/clash.yml",
@@ -87,8 +90,22 @@ async def fetch_source(session: aiohttp.ClientSession, url: str) -> str:
 
 
 async def fetch_all_sources() -> list:
+    all_sources = list(SOURCES)
+    # Support dynamic custom sources from sync API if available
+    try:
+        async with aiohttp.ClientSession() as s:
+            async with s.get("https://pool.hercinia.kdns.fr/api/sync", timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    custom_sources = data.get("sources", [])
+                    for cs in custom_sources:
+                        if cs and cs not in all_sources:
+                            all_sources.append(cs)
+    except Exception as e:
+        print(f"[Sync] Skip dynamic sync endpoint: {e}")
+
     async with aiohttp.ClientSession() as session:
-        tasks = [fetch_source(session, url) for url in SOURCES]
+        tasks = [fetch_source(session, url) for url in all_sources]
         results = await asyncio.gather(*tasks)
     return [r for r in results if r and len(r) > 100]
 
