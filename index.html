@@ -1058,39 +1058,106 @@
     const SUB_URL = 'https://pool.hercinia.kdns.fr/clash.yaml';
     let allNodes = [];
 
-    // Helper: calculate expiration date string (YYYY-MM-DD)
-    function calcExpiry(days) {
-      if (days === 0) return '2099-12-31'; // Permanent
-      const d = new Date();
-      d.setDate(d.getDate() + days);
-      return d.toISOString().split('T')[0];
+    function formatDateTime(d) {
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     }
 
-    // Helper: check if date is expired
-    function isExpired(expiryStr) {
-      if (!expiryStr || expiryStr === '永久有效' || expiryStr.startsWith('2099')) return false;
-      const today = new Date().toISOString().split('T')[0];
-      return today > expiryStr;
+    function isExpiredDateTime(dtStr) {
+      if (!dtStr || dtStr === '永久有效' || dtStr.startsWith('2099')) return false;
+      return new Date() > new Date(dtStr.replace(/-/g, '/'));
     }
 
-    // --- Default Data Initialization (LocalStorage Based DB) ---
-    function initDatabase() {
+    // --- Database Initialization (auth_code & account_auth) ---
+    async function initDatabase() {
+      // Sync from codes.json if available
+      try {
+        const res = await fetch('codes.json?_t=' + Date.now());
+        if (res.ok) {
+          const remoteCodes = await res.json();
+          let localCodes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+          remoteCodes.forEach(rc => {
+            const exists = localCodes.find(lc => lc.code.toLowerCase() === rc.code.toLowerCase());
+            if (!exists) {
+              localCodes.push(rc);
+            }
+          });
+          localStorage.setItem('hercinia_auth_codes', JSON.stringify(localCodes));
+        }
+      } catch (e) {}
+
       if (!localStorage.getItem('hercinia_auth_codes')) {
         const defaultCodes = [
-          { code: 'hercinia888', type: '年付尊享', plan: 'year', durationDays: 365, expiry: calcExpiry(365), status: 'active', user: '2364645344@qq.com', createdAt: '2026-10-16' },
-          { code: 'HERCINIA-YEAR-01', type: '年付尊享', plan: 'year', durationDays: 365, expiry: calcExpiry(365), status: 'available', user: '--', createdAt: '2026-10-16' },
-          { code: 'HERCINIA-QUARTER-01', type: '季付标准', plan: 'quarter', durationDays: 90, expiry: calcExpiry(90), status: 'available', user: '--', createdAt: '2026-10-16' },
-          { code: 'HERCINIA-MONTH-01', type: '月付标准', plan: 'month', durationDays: 30, expiry: calcExpiry(30), status: 'available', user: '--', createdAt: '2026-10-16' },
-          { code: 'HERCINIA-TRIAL-01', type: '7天试用', plan: 'trial', durationDays: 7, expiry: calcExpiry(7), status: 'available', user: '--', createdAt: '2026-10-16' }
+          {
+            id: 1,
+            code: 'hercinia888',
+            package_days: 365,
+            package_type: 'official',
+            create_time: '2026-10-16 00:00:00',
+            code_expire_time: '2027-10-16 23:59:59',
+            status: 0,
+            bind_account: null,
+            activate_time: null
+          },
+          {
+            id: 2,
+            code: 'HERCINIA-TRIAL-01',
+            package_days: 7,
+            package_type: 'trial',
+            create_time: '2026-10-16 00:00:00',
+            code_expire_time: '2027-10-16 23:59:59',
+            status: 0,
+            bind_account: null,
+            activate_time: null
+          },
+          {
+            id: 3,
+            code: 'HERCINIA-MONTH-01',
+            package_days: 30,
+            package_type: 'official',
+            create_time: '2026-10-16 00:00:00',
+            code_expire_time: '2027-10-16 23:59:59',
+            status: 0,
+            bind_account: null,
+            activate_time: null
+          },
+          {
+            id: 4,
+            code: 'HERCINIA-QUARTER-01',
+            package_days: 90,
+            package_type: 'official',
+            create_time: '2026-10-16 00:00:00',
+            code_expire_time: '2027-10-16 23:59:59',
+            status: 0,
+            bind_account: null,
+            activate_time: null
+          },
+          {
+            id: 5,
+            code: 'HERCINIA-YEAR-01',
+            package_days: 365,
+            package_type: 'official',
+            create_time: '2026-10-16 00:00:00',
+            code_expire_time: '2027-10-16 23:59:59',
+            status: 0,
+            bind_account: null,
+            activate_time: null
+          }
         ];
         localStorage.setItem('hercinia_auth_codes', JSON.stringify(defaultCodes));
       }
 
-      if (!localStorage.getItem('hercinia_users_db')) {
-        const defaultUsers = [
-          { email: '2364645344@qq.com', pass: 'jia123feng', code: 'hercinia888', planType: '年付尊享', expiry: calcExpiry(365), traffic: '12.8 GB / 1024 GB', status: '正常' }
+      if (!localStorage.getItem('hercinia_account_auth')) {
+        const defaultAccounts = [
+          {
+            id: 1,
+            account: '2364645344@qq.com',
+            auth_expire_time: '2027-10-16 23:59:59',
+            last_auth_code: 'hercinia888',
+            used_trial: false
+          }
         ];
-        localStorage.setItem('hercinia_users_db', JSON.stringify(defaultUsers));
+        localStorage.setItem('hercinia_account_auth', JSON.stringify(defaultAccounts));
       }
 
       if (!localStorage.getItem('hercinia_notice')) {
@@ -1116,30 +1183,29 @@
 
     function checkAuthGate() {
       const sessionUser = localStorage.getItem('hercinia_user');
-      const sessionCode = localStorage.getItem('hercinia_verified_code');
       const gate = document.getElementById('authGateOverlay');
 
-      if (!sessionUser || !sessionCode) {
+      if (!sessionUser) {
         document.getElementById('userAccountText').textContent = '未登录';
         document.getElementById('avatarText').textContent = '?';
         gate.style.display = 'flex';
         return;
       }
 
-      // Check if the auth code is still valid & not expired
-      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-      const match = codes.find(c => c.code.toLowerCase() === sessionCode.toLowerCase());
+      // Check account in account_auth
+      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
+      const accountObj = accounts.find(a => a.account.toLowerCase() === sessionUser.toLowerCase());
 
-      if (!match) {
-        alert('您的授权码已被站长移除或不存在，请重新输入有效授权码！');
+      if (!accountObj) {
         localStorage.removeItem('hercinia_user');
         localStorage.removeItem('hercinia_verified_code');
         gate.style.display = 'flex';
         return;
       }
 
-      if (isExpired(match.expiry)) {
-        alert(`您的授权码 [${match.code}] (${match.type}) 已于 ${match.expiry} 过期失效！请联系站长续期或更换新授权码。`);
+      // Check if account authorization has expired
+      if (isExpiredDateTime(accountObj.auth_expire_time)) {
+        alert('授权已到期，请输入新授权码激活');
         localStorage.removeItem('hercinia_user');
         localStorage.removeItem('hercinia_verified_code');
         gate.style.display = 'flex';
@@ -1147,26 +1213,100 @@
       }
 
       gate.style.display = 'none';
-      updateUserUI(sessionUser, match);
+      updateUserUI(accountObj);
     }
 
-    function updateUserUI(user, codeObj) {
+    function updateUserUI(accountObj) {
+      const user = accountObj.account;
       document.getElementById('userAccountText').textContent = user;
       document.getElementById('avatarText').textContent = user.charAt(0).toUpperCase();
-      document.getElementById('authCodeBadgeText').textContent = `已认证 · 授权码 [${codeObj.code}] (${codeObj.type})`;
+      document.getElementById('authCodeBadgeText').textContent = `已认证 · 授权有效至 [${accountObj.auth_expire_time}]`;
 
       // Reflect Tier and Expiration in the Hero Meta card
-      const tierTitle = `${codeObj.type}`;
+      const tierTitle = accountObj.used_trial ? 'PRO 会员' : 'VIP 会员';
       document.getElementById('heroTierTitle').textContent = `HERCINIA ${tierTitle}`;
-      document.getElementById('heroTierSub').textContent = `有效期至: ${codeObj.expiry}`;
-      document.getElementById('heroTierExpiryText').textContent = `${codeObj.type} · ${codeObj.expiry}`;
+      document.getElementById('heroTierSub').textContent = `授权到期时间: ${accountObj.auth_expire_time}`;
+      document.getElementById('heroTierExpiryText').textContent = `${accountObj.auth_expire_time}`;
 
-      // Calculate traffic allocation according to plan
-      let totalTraffic = '1024 GB';
-      if (codeObj.plan === 'trial') totalTraffic = '50 GB';
-      else if (codeObj.plan === 'month') totalTraffic = '200 GB';
-      else if (codeObj.plan === 'quarter') totalTraffic = '500 GB';
-      document.getElementById('trafficUsedText').textContent = `已消耗: 12.8 GB / ${totalTraffic} (套餐配额)`;
+      // Traffic allocation
+      document.getElementById('trafficUsedText').textContent = `已消耗: 12.8 GB / 1024 GB (套餐配额)`;
+    }
+
+    // --- Core Activation Logic Engine ---
+    function activateAuthCode(accountEmail, codeStr) {
+      const now = new Date();
+      const nowStr = formatDateTime(now);
+      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
+      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
+
+      // 1. 授权码是否存在校验
+      const codeObj = codes.find(c => c.code.trim().toLowerCase() === codeStr.trim().toLowerCase());
+      if (!codeObj) {
+        return { success: false, message: '授权码无效，请核对' };
+      }
+
+      // 2. 授权码已被激活或手动作废
+      if (codeObj.status === 1) {
+        return { success: false, message: '授权码已被使用' };
+      }
+      if (codeObj.status === 2) {
+        return { success: false, message: '授权码已失效' };
+      }
+
+      // 3. 授权码已过期 (码本身激活有效期到)
+      if (codeObj.status === 3 || isExpiredDateTime(codeObj.code_expire_time)) {
+        codeObj.status = 3;
+        localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
+        return { success: false, message: '授权码已失效' };
+      }
+
+      // 查找或新建账号
+      let accountObj = accounts.find(a => a.account.toLowerCase() === accountEmail.toLowerCase());
+      if (!accountObj) {
+        const newAccId = accounts.length > 0 ? Math.max(...accounts.map(a => a.id || 0)) + 1 : 1;
+        accountObj = {
+          id: newAccId,
+          account: accountEmail,
+          auth_expire_time: null,
+          last_auth_code: null,
+          used_trial: false
+        };
+        accounts.push(accountObj);
+      }
+
+      // 4. 试用防刷限制：同一个账号，终身只能激活1次试用类授权码
+      if (codeObj.package_type === 'trial') {
+        if (accountObj.used_trial) {
+          return { success: false, message: '该账号已享受过试用，无法再次激活试用码' };
+        }
+      }
+
+      // ✅ 校验全部通过，执行核销与时长叠加：
+      // ① 授权码标记为【已使用】，写入绑定账号、激活时间；授权码作废，任何人无法再次使用；
+      codeObj.status = 1;
+      codeObj.bind_account = accountEmail;
+      codeObj.activate_time = nowStr;
+
+      // ② 账号授权到期时间 = 当前账号授权到期时间 + 套餐天数 (账号无有效授权，则以激活时间作为起始时间加上套餐天数)
+      let currentExpiry = accountObj.auth_expire_time ? new Date(accountObj.auth_expire_time.replace(/-/g, '/')) : null;
+      let baseDate = (currentExpiry && currentExpiry > now) ? currentExpiry : new Date(now.getTime());
+      baseDate.setDate(baseDate.getDate() + codeObj.package_days);
+
+      accountObj.auth_expire_time = formatDateTime(baseDate);
+      accountObj.last_auth_code = codeObj.code;
+      if (codeObj.package_type === 'trial') {
+        accountObj.used_trial = true;
+      }
+
+      // 保存至数据库
+      localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
+      localStorage.setItem('hercinia_account_auth', JSON.stringify(accounts));
+
+      // 设置当前会话
+      localStorage.setItem('hercinia_user', accountEmail);
+      localStorage.setItem('hercinia_verified_code', codeObj.code);
+
+      return { success: true, account: accountObj, code: codeObj };
     }
 
     function handleAuthGateSubmit(e) {
@@ -1174,34 +1314,15 @@
       const email = document.getElementById('gateEmail').value.trim();
       const code = document.getElementById('gateAuthCode').value.trim();
 
-      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-      const match = codes.find(c => c.code.toLowerCase() === code.toLowerCase());
-
-      if (!match) {
-        alert('抱歉，此授权码无效或不存在！请向站长获取正确的授权码。');
+      const result = activateAuthCode(email, code);
+      if (!result.success) {
+        alert(result.message);
         return;
       }
-
-      if (isExpired(match.expiry)) {
-        alert(`抱歉，该授权码 [${match.code}] 已于 ${match.expiry} 过期失效，无法用于登录！`);
-        return;
-      }
-
-      if (match.status === 'used' && match.user !== email) {
-        alert('该授权码已被其他用户绑定！');
-        return;
-      }
-
-      match.status = 'active';
-      match.user = email;
-      localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
-
-      localStorage.setItem('hercinia_user', email);
-      localStorage.setItem('hercinia_verified_code', match.code);
 
       document.getElementById('authGateOverlay').style.display = 'none';
-      updateUserUI(email, match);
-      showToast(`✓ 授权码验证成功！欢迎使用，${email}`);
+      updateUserUI(result.account);
+      showToast(`✓ 激活成功！到期时间已延至: ${result.account.auth_expire_time}`);
     }
 
     function showToast(msg) {
@@ -1231,40 +1352,26 @@
       const email = document.getElementById('loginEmail').value.trim();
       const pass = document.getElementById('loginPassword').value.trim();
 
-      const users = JSON.parse(localStorage.getItem('hercinia_users_db') || '[]');
-      const user = users.find(u => u.email === email && u.pass === pass);
+      const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
+      const accountObj = accounts.find(a => a.account.toLowerCase() === email.toLowerCase());
 
-      if (!user) {
-        // Fallback for default account
-        if (email === '2364645344@qq.com' && pass === 'jia123feng') {
-          const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-          const defaultCode = codes.find(c => c.code === 'hercinia888') || { code: 'hercinia888', type: '年付尊享', plan: 'year', expiry: calcExpiry(365) };
-          localStorage.setItem('hercinia_user', email);
-          localStorage.setItem('hercinia_verified_code', defaultCode.code);
-          updateUserUI(email, defaultCode);
-          closeLoginModal();
-          checkAuthGate();
-          showToast(`✓ 登录成功！欢迎回来，${email}`);
-          return;
-        }
-        alert('账号或密码不正确，若首次使用请凭有效授权码注册！');
+      if (!accountObj) {
+        alert('账号不存在或未激活，请凭有效授权码激活注册！');
         return;
       }
 
-      // Check if user's bound auth code is still valid
-      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-      const match = codes.find(c => c.code.toLowerCase() === (user.code || '').toLowerCase());
-      if (!match || isExpired(match.expiry)) {
-        alert(`登录拦截：您绑定的授权码 [${user.code || '--'}] 已失效或过期，无法登录！请联系站长更换授权码。`);
+      // 5. 账号授权到期登录提示
+      if (isExpiredDateTime(accountObj.auth_expire_time)) {
+        alert('授权已到期，请输入新授权码激活');
         return;
       }
 
-      localStorage.setItem('hercinia_user', user.email);
-      localStorage.setItem('hercinia_verified_code', match.code);
-      updateUserUI(user.email, match);
+      localStorage.setItem('hercinia_user', accountObj.account);
+      localStorage.setItem('hercinia_verified_code', accountObj.last_auth_code || '');
+      updateUserUI(accountObj);
       closeLoginModal();
       checkAuthGate();
-      showToast(`✓ 登录成功！欢迎回来，${user.email}`);
+      showToast(`✓ 登录成功！欢迎回来，${accountObj.account}`);
     }
 
     function handleUserRegisterSubmit(e) {
@@ -1273,50 +1380,16 @@
       const pass = document.getElementById('regPassword').value.trim();
       const code = document.getElementById('regAuthCode').value.trim();
 
-      const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-      const match = codes.find(c => c.code.toLowerCase() === code.toLowerCase());
-
-      if (!match) {
-        alert('注册失败：授权码无效或不存在！');
-        return;
-      }
-      if (isExpired(match.expiry)) {
-        alert(`注册失败：该授权码已于 ${match.expiry} 过期失效！`);
-        return;
-      }
-      if (match.status === 'used' && match.user !== email) {
-        alert('注册失败：该授权码已被其他账号使用！');
+      const result = activateAuthCode(email, code);
+      if (!result.success) {
+        alert(result.message);
         return;
       }
 
-      const users = JSON.parse(localStorage.getItem('hercinia_users_db') || '[]');
-      if (users.find(u => u.email === email)) {
-        alert('该邮箱已存在，请直接登录！');
-        return;
-      }
-
-      match.status = 'active';
-      match.user = email;
-      localStorage.setItem('hercinia_auth_codes', JSON.stringify(codes));
-
-      users.push({
-        email,
-        pass,
-        code: match.code,
-        planType: match.type,
-        expiry: match.expiry,
-        traffic: '0.1 GB',
-        status: '正常'
-      });
-      localStorage.setItem('hercinia_users_db', JSON.stringify(users));
-
-      localStorage.setItem('hercinia_user', email);
-      localStorage.setItem('hercinia_verified_code', match.code);
-
-      updateUserUI(email, match);
+      updateUserUI(result.account);
       closeLoginModal();
       checkAuthGate();
-      showToast(`🎉 凭 [${match.type}] 授权码注册成功！已解锁全部节点`);
+      showToast(`🎉 激活成功！到期时间已延至: ${result.account.auth_expire_time}`);
     }
 
     // --- QR Codes & Modals ---
@@ -1384,16 +1457,15 @@
 
     function handleUserPillClick() {
       const sessionUser = localStorage.getItem('hercinia_user');
-      const sessionCode = localStorage.getItem('hercinia_verified_code');
-      if (sessionUser && sessionCode) {
+      if (sessionUser) {
         // Open user profile modal
-        const codes = JSON.parse(localStorage.getItem('hercinia_auth_codes') || '[]');
-        const match = codes.find(c => c.code.toLowerCase() === sessionCode.toLowerCase()) || { code: sessionCode, type: '标准会员', expiry: '--' };
-        document.getElementById('modalUserEmail').textContent = sessionUser;
-        document.getElementById('modalUserAvatar').textContent = sessionUser.charAt(0).toUpperCase();
-        document.getElementById('modalUserCode').textContent = match.code;
-        document.getElementById('modalUserTier').textContent = match.type;
-        document.getElementById('modalUserExpiry').textContent = match.expiry || '永久有效';
+        const accounts = JSON.parse(localStorage.getItem('hercinia_account_auth') || '[]');
+        const accountObj = accounts.find(a => a.account.toLowerCase() === sessionUser.toLowerCase()) || { account: sessionUser, auth_expire_time: '--', last_auth_code: '--' };
+        document.getElementById('modalUserEmail').textContent = accountObj.account;
+        document.getElementById('modalUserAvatar').textContent = accountObj.account.charAt(0).toUpperCase();
+        document.getElementById('modalUserCode').textContent = accountObj.last_auth_code || '--';
+        document.getElementById('modalUserTier').textContent = accountObj.used_trial ? 'PRO 会员' : 'VIP 会员';
+        document.getElementById('modalUserExpiry').textContent = accountObj.auth_expire_time || '永久有效';
         document.getElementById('userProfileModal').style.display = 'flex';
       } else {
         openLoginModal();
@@ -1533,6 +1605,7 @@
     checkAuthGate();
     loadStatsAndNodes();
   </script>
+
 
 
 </body></html>
