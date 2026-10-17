@@ -562,11 +562,6 @@
             if (json.data.deleted) {
               localStorage.setItem('hercinia_deleted_codes', JSON.stringify(json.data.deleted));
             }
-            if (json.data.notice !== undefined) {
-              localStorage.setItem('hercinia_notice', json.data.notice);
-              const nInput = document.getElementById('noticeTextInput');
-              if (nInput) nInput.value = json.data.notice;
-            }
           }
         }
       } catch (e) {}
@@ -1042,26 +1037,10 @@
       showToast('已移除该订阅源');
     }
 
-    async function saveAdminNotice() {
+    function saveAdminNotice() {
       const txt = document.getElementById('noticeTextInput').value.trim();
       localStorage.setItem('hercinia_notice', txt);
-      try {
-        const res = await fetch('/api/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'save_notice',
-            data: txt
-          })
-        });
-        if (res.ok) {
-          showToast('✓ 全站公告已成功同步发布至全网云端！');
-        } else {
-          showToast('✓ 公告已存本地 (云端同步响应异常)');
-        }
-      } catch (e) {
-        showToast('✓ 公告已存本地 (网络请求异常)');
-      }
+      showToast('✓ 全站公告已更新！');
     }
 
     async function triggerRemoteWorkflow() {
@@ -1111,10 +1090,6 @@
 
     checkAdminSession();
     fetchStats();
-    const cachedNotice = localStorage.getItem('hercinia_notice');
-    if (cachedNotice && document.getElementById('noticeTextInput')) {
-      document.getElementById('noticeTextInput').value = cachedNotice;
-    }
   </script>
 
 

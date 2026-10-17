@@ -1096,11 +1096,6 @@
             if (json.data.deleted) {
               localStorage.setItem('hercinia_deleted_codes', JSON.stringify(json.data.deleted));
             }
-            if (json.data.notice) {
-              localStorage.setItem('hercinia_notice', json.data.notice);
-              const nEl = document.getElementById('noticeContentText');
-              if (nEl) nEl.textContent = json.data.notice;
-            }
           }
         }
       } catch (e) {}
@@ -1751,10 +1746,6 @@
     // Startup
     checkAuthGate();
     loadStatsAndNodes();
-    const cachedNotice = localStorage.getItem('hercinia_notice');
-    if (cachedNotice && document.getElementById('noticeContentText')) {
-      document.getElementById('noticeContentText').textContent = cachedNotice;
-    }
   </script>
 
 
