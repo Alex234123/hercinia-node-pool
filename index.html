@@ -1096,6 +1096,11 @@
             if (json.data.deleted) {
               localStorage.setItem('hercinia_deleted_codes', JSON.stringify(json.data.deleted));
             }
+            if (json.data.notice !== undefined && json.data.notice !== null && json.data.notice !== '') {
+              localStorage.setItem('hercinia_notice', json.data.notice);
+              const noticeEl = document.getElementById('noticeContentText');
+              if (noticeEl) noticeEl.textContent = json.data.notice;
+            }
           }
         }
       } catch (e) {}
@@ -1215,7 +1220,13 @@
         localStorage.setItem('hercinia_notice', '全新 24/7 边缘节点云池已就绪！采用授权码注册体系，节点自动化探活。');
       }
     }
-    initDatabase();
+    initDatabase().then(() => {
+      const savedNotice = localStorage.getItem('hercinia_notice');
+      if (savedNotice) {
+        const noticeEl = document.getElementById('noticeContentText');
+        if (noticeEl) noticeEl.textContent = savedNotice;
+      }
+    });
 
     // --- Theme Management ---
     function initTheme() {
