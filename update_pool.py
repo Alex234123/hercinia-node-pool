@@ -717,7 +717,7 @@ async def benchmark_node_tcp(node: dict, sem: asyncio.Semaphore, timeout: float 
 
 async def benchmark_node_real_mihomo(client: aiohttp.ClientSession, node_name: str, sem: asyncio.Semaphore, timeout: float = 3.0):
     async with sem:
-        target_gen204 = "https://cp.cloudflare.com/generate_204"
+        target_gen204 = "https://www.google.com/generate_204"
         test_url = f"http://127.0.0.1:9097/proxies/{urllib.parse.quote(node_name)}/delay?timeout=2500&url=" + target_gen204
         try:
             async with client.get(test_url, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
@@ -925,7 +925,7 @@ def build_final_subscription(alive_nodes_with_delay: list):
 
                 "type": "url-test",
 
-                "url": "https://cp.cloudflare.com/generate_204",
+                "url": "https://www.google.com/generate_204",
 
                 "interval": 300,
 
@@ -941,7 +941,7 @@ def build_final_subscription(alive_nodes_with_delay: list):
 
                 "type": "fallback",
 
-                "url": "https://cp.cloudflare.com/generate_204",
+                "url": "https://www.google.com/generate_204",
 
                 "interval": 300,
 
@@ -955,7 +955,7 @@ def build_final_subscription(alive_nodes_with_delay: list):
 
                 "type": "load-balance",
 
-                "url": "https://cp.cloudflare.com/generate_204",
+                "url": "https://www.google.com/generate_204",
 
                 "interval": 300,
 
