@@ -34,6 +34,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Setup Mihomo Core for Real Outbound Benchmark
+        run: |
+          curl -sL "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.32/mihomo-linux-amd64-compatible-v1.19.32.gz" -o mihomo.gz
+          gzip -d mihomo.gz
+          chmod +x mihomo
+          ./mihomo -v
+
       - name: Run Scraper & Latency Benchmark
         run: |
           python update_pool.py
