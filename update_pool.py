@@ -18,8 +18,10 @@ import aiohttp
 import yaml
 
 SOURCES = [
-    # Dedicated fast subscription source
+    # Dedicated fast subscription sources
     "https://node.hercinia-fast.kdns.fr/sub?token=2eff9965b7ac4338d22c115ce9c55894&clash",
+    "https://47.242.178.159/proxy?url=https://subscription.5188333.xyz/ovoovo?token=f3b7de2a34aeb4455c24fc62897769fe",
+    "https://fghjhgew.xn--fiqs8s9rjgsr.com/search?token=0da09d928db26ae921e8e7ca953a8704",
 
     # ermaozi/get_subscribe — multiple CDN mirrors
     "https://testingcf.jsdelivr.net/gh/ermaozi/get_subscribe@main/subscribe/clash.yml",
