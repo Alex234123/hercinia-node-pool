@@ -292,7 +292,7 @@ def build_final_subscription(alive_nodes_with_delay: list):
 
     final_proxies = []
     proxy_names = []
-    name_counts = {}
+    used_names = set()
 
     for original_node, delay in alive_nodes_with_delay:
         raw_name = str(original_node.get("name", "Node")).strip()
@@ -301,17 +301,21 @@ def build_final_subscription(alive_nodes_with_delay: list):
             clean_name = f"{original_node.get('type', 'proxy').upper()}-{original_node.get('server')}"
 
         ptype = original_node.get("type", "").upper()
-        formatted_name = f"[{ptype}|{delay}ms] {clean_name}"
-        if formatted_name in name_counts:
-            name_counts[formatted_name] += 1
-            formatted_name = f"{formatted_name} #{name_counts[formatted_name]}"
-        else:
-            name_counts[formatted_name] = 1
+        base_name = f"[{ptype}|{delay}ms] {clean_name}"
+        
+        # 严格全局唯一性保障，杜绝 Clash duplicate name 错误
+        unique_name = base_name
+        counter = 1
+        while unique_name in used_names:
+            counter += 1
+            unique_name = f"{base_name} #{counter}"
+        
+        used_names.add(unique_name)
 
         node_dict = dict(original_node)
-        node_dict["name"] = formatted_name
+        node_dict["name"] = unique_name
         final_proxies.append(node_dict)
-        proxy_names.append(formatted_name)
+        proxy_names.append(unique_name)
 
     cst_time = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
 
