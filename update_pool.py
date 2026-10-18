@@ -18,42 +18,49 @@ import aiohttp
 import yaml
 
 SOURCES = [
-    # Dedicated fast subscription sources
+    # 1. 站长专属高优订阅源 (Dedicated fast subscription sources)
     "https://node.hercinia-fast.kdns.fr/sub?token=2eff9965b7ac4338d22c115ce9c55894&clash",
     "https://47.242.178.159/proxy?url=https://subscription.5188333.xyz/ovoovo?token=f3b7de2a34aeb4455c24fc62897769fe",
     "https://fghjhgew.xn--fiqs8s9rjgsr.com/search?token=0da09d928db26ae921e8e7ca953a8704",
 
-    # ermaozi/get_subscribe — multiple CDN mirrors
+    # 2. 新一代高速专线专项池 (Hysteria2 / VLESS-Reality / TUIC - yebekhe)
+    "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/meta/hysteria2",
+    "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/meta/reality",
+    "https://raw.githubusercontent.com/yebekhe/TVC/main/subscriptions/meta/all",
+
+    # 3. 经典高频去重全协议池 (mianfeifq 每日清洗池)
+    "https://raw.githubusercontent.com/mianfeifq/share/main/clash.yaml",
+    "https://fastly.jsdelivr.net/gh/mianfeifq/share@main/clash.yaml",
+    "https://testingcf.jsdelivr.net/gh/mianfeifq/share@main/clash.yaml",
+
+    # 4. ermaozi/get_subscribe — 多 CDN 镜像
     "https://testingcf.jsdelivr.net/gh/ermaozi/get_subscribe@main/subscribe/clash.yml",
     "https://fastly.jsdelivr.net/gh/ermaozi/get_subscribe@main/subscribe/clash.yml",
-    "https://gcore.jsdelivr.net/gh/ermaozi/get_subscribe@main/subscribe/clash.yml",
     "https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/clash.yml",
 
-    # anaer/Sub — multiple CDN mirrors
+    # 5. anaer/Sub — 多 CDN 镜像
     "https://testingcf.jsdelivr.net/gh/anaer/Sub@main/clash.yaml",
     "https://fastly.jsdelivr.net/gh/anaer/Sub@main/clash.yaml",
-    "https://gcore.jsdelivr.net/gh/anaer/Sub@main/clash.yaml",
     "https://raw.githubusercontent.com/anaer/Sub/main/clash.yaml",
 
-    # ripaojiedian/freenode
+    # 6. ripaojiedian/freenode 节点池
     "https://fastly.jsdelivr.net/gh/ripaojiedian/freenode@main/clash",
-    "https://gcore.jsdelivr.net/gh/ripaojiedian/freenode@main/clash",
     "https://raw.githubusercontent.com/ripaojiedian/freenode/main/clash",
 
-    # mahdibland/V2RayAggregator
+    # 7. mahdibland/V2RayAggregator
     "https://testingcf.jsdelivr.net/gh/mahdibland/V2RayAggregator@master/Eternity.yml",
     "https://fastly.jsdelivr.net/gh/mahdibland/V2RayAggregator@master/Eternity.yml",
     "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/Eternity.yml",
 
-    # peasoft/NoMoreWalls
+    # 8. peasoft/NoMoreWalls
     "https://testingcf.jsdelivr.net/gh/peasoft/NoMoreWalls@master/list.yml",
     "https://fastly.jsdelivr.net/gh/peasoft/NoMoreWalls@master/list.yml",
 
-    # Pawdroid/Free-servers
+    # 9. Pawdroid/Free-servers
     "https://testingcf.jsdelivr.net/gh/Pawdroid/Free-servers@main/sub",
     "https://fastly.jsdelivr.net/gh/Pawdroid/Free-servers@main/sub",
 
-    # vxiaov/free_proxies
+    # 10. vxiaov/free_proxies
     "https://fastly.jsdelivr.net/gh/vxiaov/free_proxies@main/clash/clash.provider.yaml",
     "https://testingcf.jsdelivr.net/gh/vxiaov/free_proxies@main/clash/clash.provider.yaml"
 ]
@@ -257,16 +264,99 @@ async def benchmark_node_tcp(node: dict, sem: asyncio.Semaphore, timeout: float 
         return None
 
 
-async def benchmark_all_nodes(nodes: list) -> list:
-    print(f"[Benchmark] Testing TCP handshake & alive latency across {len(nodes)} candidate nodes...")
-    sem = asyncio.Semaphore(150)  # 150 concurrent sockets
-    tasks = [benchmark_node_tcp(n, sem, timeout=2.0) for n in nodes]
-    results = await asyncio.gather(*tasks)
+async def benchmark_node_real_mihomo(client: aiohttp.ClientSession, node_name: str, sem: asyncio.Semaphore, timeout: float = 3.0):
+    async with sem:
+        test_url = f"http://127.0.0.1:9097/proxies/{urllib.parse.quote(node_name)}/delay?timeout=2500&url=https://www.google.com/generate_204"
+        try:
+            async with client.get(test_url, timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    delay = data.get("delay", 0)
+                    if 0 < delay < 2500:
+                        return delay
+        except Exception:
+            pass
+        return None
 
-    alive = [r for r in results if r is not None]
-    alive.sort(key=lambda x: x[1])  # Sort by latency ascending
-    print(f"[Benchmark] Completed! {len(alive)} out of {len(nodes)} nodes verified ALIVE & reachable!")
-    return alive
+
+async def benchmark_all_nodes(nodes: list) -> list:
+    print(f"[Benchmark: Stage 1] Pre-filtering {len(nodes)} candidate nodes via fast TCP handshake...")
+    sem_tcp = asyncio.Semaphore(150)
+    tasks_tcp = [benchmark_node_tcp(n, sem_tcp, timeout=2.0) for n in nodes]
+    results_tcp = await asyncio.gather(*tasks_tcp)
+    tcp_alive = [r[0] for r in results_tcp if r is not None]
+    print(f"[Benchmark: Stage 1] {len(tcp_alive)} nodes passed TCP connectivity check.")
+
+    if not tcp_alive:
+        return []
+
+    # 检查环境中是否存在 mihomo / clash 内核
+    mihomo_bin = None
+    for candidate in ["./mihomo", "mihomo", "/usr/local/bin/mihomo"]:
+        if os.path.exists(candidate) or (os.name != "nt" and os.system(f"which {candidate} >/dev/null 2>&1") == 0):
+            mihomo_bin = candidate
+            break
+
+    # 若未找到 mihomo 内核，平滑降级为 TCP 测速结果
+    if not mihomo_bin:
+        print("[Benchmark] No mihomo core detected. Gracefully falling back to fast TCP benchmark...")
+        alive_fallback = [r for r in results_tcp if r is not None]
+        alive_fallback.sort(key=lambda x: x[1])
+        return alive_fallback
+
+    print(f"[Benchmark: Stage 2] Testing REAL outbound connectivity via Mihomo Core for {len(tcp_alive)} nodes...")
+    # 为内核准备测速配置
+    temp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".mihomo_temp")
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    # 格式化节点名称以供 Mihomo 唯一识别
+    named_nodes = []
+    for idx, n in enumerate(tcp_alive):
+        node_copy = dict(n)
+        node_copy["name"] = f"TestNode_{idx}"
+        named_nodes.append(node_copy)
+
+    temp_config = {
+        "port": 7895,
+        "socks-port": 7896,
+        "mode": "rule",
+        "log-level": "silent",
+        "external-controller": "127.0.0.1:9097",
+        "proxies": named_nodes
+    }
+    
+    config_path = os.path.join(temp_dir, "config.yaml")
+    with open(config_path, "w", encoding="utf-8") as f:
+        yaml.dump(temp_config, f, allow_unicode=True)
+
+    # 启动 Mihomo 后台进程
+    import subprocess
+    proc = subprocess.Popen([mihomo_bin, "-d", temp_dir], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    await asyncio.sleep(2.5)  # 等待内核控制器完全就绪
+
+    real_alive = []
+    try:
+        sem_http = asyncio.Semaphore(60)  # 60 并发真实出网压测
+        async with aiohttp.ClientSession() as client:
+            test_tasks = [
+                benchmark_node_real_mihomo(client, n["name"], sem_http)
+                for n in named_nodes
+            ]
+            delays = await asyncio.gather(*test_tasks)
+
+            for original_n, delay in zip(tcp_alive, delays):
+                if delay:
+                    real_alive.append((original_n, delay))
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=3)
+        except Exception:
+            proc.kill()
+
+    real_alive.sort(key=lambda x: x[1])
+    print(f"[Benchmark] Completed! {len(real_alive)} out of {len(nodes)} nodes verified 100% REAL OUTBOUND ALIVE (HTTP 204)!")
+    return real_alive if real_alive else [r for r in results_tcp if r is not None]
 
 
 def build_final_subscription(alive_nodes_with_delay: list):
