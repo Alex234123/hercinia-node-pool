@@ -1,7 +1,0 @@
-name = "hercinia-node-pool"
-compatibility_date = "2026-10-10"
-pages_build_output_dir = "."
-
-[[kv_namespaces]]
-binding = "AUTH_KV"
-id = "07c6033de85843f2aadbc2a5b7cbd0ce"

@@ -2,33 +2,79 @@
  * Cloudflare Pages Function: /api/sync
  * 真正跨浏览器、跨设备的云端实时数据同步中心
  * 绑定 KV: AUTH_KV (HERCINIA_POOL_KV)
+ * 安全特性：GET 保持公开支持前台用户读取公告与源状态；POST 强制执行 HMAC-SHA256 鉴权
  */
 
-export async function onRequest(context) {
-  const { request, env } = context;
-  const url = new URL(request.url);
-
-  // CORS 响应头
-  const corsHeaders = {
+function withSecurityHeaders(headers = {}) {
+  return {
+    ...headers,
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Content-Type': 'application/json; charset=utf-8'
   };
+}
+
+function base64UrlEncode(str) {
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function verifyHmacToken(secret, token) {
+  if (!token || typeof token !== 'string') return false;
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
+
+  const [payloadB64, signatureB64] = parts;
+  let payload;
+  try {
+    const raw = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
+    payload = JSON.parse(raw);
+  } catch (e) {
+    return false;
+  }
+
+  // 显式校验过期时间
+  const now = Math.floor(Date.now() / 1000);
+  if (!payload.exp || now > payload.exp) {
+    return false;
+  }
+
+  // 计算并比对签名
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, enc.encode(payloadB64));
+  const hashArray = Array.from(new Uint8Array(signature));
+  const hashStr = String.fromCharCode.apply(null, hashArray);
+  const expectedSignatureB64 = base64UrlEncode(hashStr);
+
+  return signatureB64 === expectedSignatureB64;
+}
+
+export async function onRequest(context) {
+  const { request, env } = context;
 
   if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return new Response(null, { status: 204, headers: withSecurityHeaders() });
   }
 
   const kv = env.AUTH_KV;
   if (!kv) {
     return new Response(JSON.stringify({ error: 'AUTH_KV binding not found' }), {
       status: 500,
-      headers: corsHeaders
+      headers: withSecurityHeaders()
     });
   }
 
-  // GET: 获取全网最新的授权码、激活用户、聚合订阅源与全站公告
+  // GET: 获取全网最新的授权码、激活用户、聚合订阅源与全站公告（前台依赖，保持兼容）
   if (request.method === 'GET') {
     let codes = await kv.get('hercinia_auth_codes', { type: 'json' });
     let users = await kv.get('hercinia_account_auth', { type: 'json' });
@@ -36,14 +82,8 @@ export async function onRequest(context) {
     let sources = await kv.get('hercinia_sources', { type: 'json' });
     let notice = await kv.get('hercinia_notice');
 
-    if (!codes) {
-      codes = [];
-    }
-
-    if (!users) {
-      users = [];
-    }
-
+    if (!codes) codes = [];
+    if (!users) users = [];
     if (!sources) {
       sources = [
         {
@@ -85,7 +125,6 @@ export async function onRequest(context) {
       await kv.put('hercinia_notice', notice);
     }
 
-    // 提取纯订阅 URL 数组，兼容后端 update_pool.py 读取
     const sourceUrls = Array.isArray(sources) 
       ? sources.map(s => (typeof s === 'string' ? s : s.url)).filter(Boolean)
       : [];
@@ -100,11 +139,23 @@ export async function onRequest(context) {
         sources: sources || [],
         notice: notice || ''
       }
-    }), { headers: corsHeaders });
+    }), { headers: withSecurityHeaders() });
   }
 
-  // POST: 站长新建/编辑/删除授权码、订阅聚合源、全站公告或前台用户激活
+  // POST: 站长新建/编辑/删除授权码、订阅聚合源、全站公告（严格执行 Bearer HMAC-Token 鉴权）
   if (request.method === 'POST') {
+    const authHeader = request.headers.get('Authorization') || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    const adminSecret = (env.ADMIN_SECRET || 'hercinia_super_secure_hmac_secret_2026_default').trim();
+
+    const isValid = await verifyHmacToken(adminSecret, token);
+    if (!isValid) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized: 拒绝访问，缺少合法管理员签名凭证' }), {
+        status: 401,
+        headers: withSecurityHeaders()
+      });
+    }
+
     try {
       const payload = await request.json();
       const { type, data } = payload;
@@ -126,15 +177,15 @@ export async function onRequest(context) {
       }
 
       return new Response(JSON.stringify({ success: true, message: 'Cloud sync updated' }), {
-        headers: corsHeaders
+        headers: withSecurityHeaders()
       });
     } catch (err) {
       return new Response(JSON.stringify({ success: false, error: err.message }), {
         status: 400,
-        headers: corsHeaders
+        headers: withSecurityHeaders()
       });
     }
   }
 
-  return new Response('Method Not Allowed', { status: 405, headers: corsHeaders });
+  return new Response('Method Not Allowed', { status: 405, headers: withSecurityHeaders() });
 }
