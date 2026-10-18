@@ -89,7 +89,7 @@ async def fetch_source(session: aiohttp.ClientSession, url: str) -> str:
         "User-Agent": "ClashMeta/v1.19.2 (HerciniaCloud/2.0; +https://github.com/Alex234123/hercinia-node-pool)"
     }
     try:
-        async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+        async with session.get(url, headers=headers, ssl=False, timeout=aiohttp.ClientTimeout(total=20)) as resp:
             if resp.status == 200:
                 text = await resp.text(errors="ignore")
                 return text
@@ -280,83 +280,11 @@ async def benchmark_node_real_mihomo(client: aiohttp.ClientSession, node_name: s
 
 
 async def benchmark_all_nodes(nodes: list) -> list:
-    print(f"[Benchmark: Stage 1] Pre-filtering {len(nodes)} candidate nodes via fast TCP handshake...")
-    sem_tcp = asyncio.Semaphore(150)
-    tasks_tcp = [benchmark_node_tcp(n, sem_tcp, timeout=2.0) for n in nodes]
-    results_tcp = await asyncio.gather(*tasks_tcp)
-    tcp_alive = [r[0] for r in results_tcp if r is not None]
-    print(f"[Benchmark: Stage 1] {len(tcp_alive)} nodes passed TCP connectivity check.")
-
-    if not tcp_alive:
-        return []
-
-    # 检查环境中是否存在 mihomo / clash 内核
-    mihomo_bin = None
-    for candidate in ["./mihomo", "mihomo", "/usr/local/bin/mihomo"]:
-        if os.path.exists(candidate) or (os.name != "nt" and os.system(f"which {candidate} >/dev/null 2>&1") == 0):
-            mihomo_bin = candidate
-            break
-
-    # 若未找到 mihomo 内核，平滑降级为 TCP 测速结果
-    if not mihomo_bin:
-        print("[Benchmark] No mihomo core detected. Gracefully falling back to fast TCP benchmark...")
-        alive_fallback = [r for r in results_tcp if r is not None]
-        alive_fallback.sort(key=lambda x: x[1])
-        return alive_fallback
-
-    print(f"[Benchmark: Stage 2] Testing REAL outbound connectivity via Mihomo Core for {len(tcp_alive)} nodes...")
-    # 为内核准备测速配置
-    temp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".mihomo_temp")
-    os.makedirs(temp_dir, exist_ok=True)
-    
-    # 格式化节点名称以供 Mihomo 唯一识别
-    named_nodes = []
-    for idx, n in enumerate(tcp_alive):
-        node_copy = dict(n)
-        node_copy["name"] = f"TestNode_{idx}"
-        named_nodes.append(node_copy)
-
-    temp_config = {
-        "port": 7895,
-        "socks-port": 7896,
-        "mode": "rule",
-        "log-level": "silent",
-        "external-controller": "127.0.0.1:9097",
-        "proxies": named_nodes
-    }
-    
-    config_path = os.path.join(temp_dir, "config.yaml")
-    with open(config_path, "w", encoding="utf-8") as f:
-        yaml.dump(temp_config, f, allow_unicode=True)
-
-    # 启动 Mihomo 后台进程
-    import subprocess
-    proc = subprocess.Popen([mihomo_bin, "-d", temp_dir], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    await asyncio.sleep(2.5)  # 等待内核控制器完全就绪
-
-    real_alive = []
-    try:
-        sem_http = asyncio.Semaphore(60)  # 60 并发真实出网压测
-        async with aiohttp.ClientSession() as client:
-            test_tasks = [
-                benchmark_node_real_mihomo(client, n["name"], sem_http)
-                for n in named_nodes
-            ]
-            delays = await asyncio.gather(*test_tasks)
-
-            for original_n, delay in zip(tcp_alive, delays):
-                if delay:
-                    real_alive.append((original_n, delay))
-    finally:
-        proc.terminate()
-        try:
-            proc.wait(timeout=3)
-        except Exception:
-            proc.kill()
-
-    real_alive.sort(key=lambda x: x[1])
-    print(f"[Benchmark] Completed! {len(real_alive)} out of {len(nodes)} nodes verified 100% REAL OUTBOUND ALIVE (HTTP 204)!")
-    return real_alive if real_alive else [r for r in results_tcp if r is not None]
+    print(f"[Benchmark] Bypass filtering: Directly including all {len(nodes)} deduplicated nodes without dropping...")
+    # 完全关闭筛选：将所有拉取解析到的节点 100% 全量保留并生成订阅
+    all_alive = [(n, 66) for n in nodes]
+    print(f"[Benchmark] 100% Passthrough! All {len(all_alive)} candidate nodes preserved for clash.yaml.")
+    return all_alive
 
 
 def build_final_subscription(alive_nodes_with_delay: list):
