@@ -2160,7 +2160,7 @@
           showToast(data.message || '✓ 触发全自动云端测速构建成功！');
           btn.textContent = '已触发排队中...';
         } else {
-          showToast(`❌ 触发失败: ${data.error || res.status}`);
+          showToast('❌ 触发失败: ' + (data.error || res.status));
           btn.disabled = false;
           btn.textContent = '⚡ 立即触发云端全自动测速并部署';
         }
@@ -2169,53 +2169,7 @@
         btn.disabled = false;
         btn.textContent = '⚡ 立即触发云端全自动测速并部署';
       }
-    }/${REPO}/actions/workflows/${WORKFLOW_ID}/dispatches`, {
-
-          method: 'POST',
-
-          headers: {
-
-            'Authorization': `token ${token}`,
-
-            'Accept': 'application/vnd.github.v3+json',
-
-            'Content-Type': 'application/json'
-
-          },
-
-          body: JSON.stringify({ ref: 'main' })
-
-        });
-
-        if (res.status === 204 || res.status === 200) {
-
-          showToast('✓ 成功触发云端探活测速工作流！');
-
-          btn.textContent = '云端执行中...';
-
-        } else {
-
-          showToast(`✗ 触发异常 (${res.status})`);
-
-          btn.disabled = false;
-
-          btn.textContent = '🔄 立即触发全网探活测速';
-
-        }
-
-      } catch (e) {
-
-        showToast('✗ 网络请求错误: ' + e.message);
-
-        btn.disabled = false;
-
-        btn.textContent = '🔄 立即触发全网探活测速';
-
-      }
-
     }
-
-
 
     // Load remote stats
 
