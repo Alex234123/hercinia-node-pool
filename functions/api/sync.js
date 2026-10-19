@@ -2,7 +2,10 @@
  * Cloudflare Pages Function: /api/sync
  * 真正跨浏览器、跨设备的云端实时数据同步中心
  * 绑定 KV: AUTH_KV (HERCINIA_POOL_KV)
- * 安全特性：GET 保持公开支持前台用户读取公告与源状态；POST 强制执行 HMAC-SHA256 鉴权
+ * 安全特性：
+ * 1. GET 保持公开支持前台用户读取公告与源状态；
+ * 2. POST 具有公开安全的原子激活核销端点（type: 'activate_code'）；
+ * 3. 其余敏感管理操作（save_codes, save_users, save_all, save_sources, save_notice）强制执行 HMAC-SHA256 鉴权。
  */
 
 function withSecurityHeaders(headers = {}) {
@@ -59,6 +62,25 @@ async function verifyHmacToken(secret, token) {
   return signatureB64 === expectedSignatureB64;
 }
 
+function padZero(n) {
+  return n < 10 ? '0' + n : '' + n;
+}
+
+function formatDateTime(d) {
+  return d.getFullYear() + '-' +
+    padZero(d.getMonth() + 1) + '-' +
+    padZero(d.getDate()) + ' ' +
+    padZero(d.getHours()) + ':' +
+    padZero(d.getMinutes()) + ':' +
+    padZero(d.getSeconds());
+}
+
+function isExpiredDateTime(dtStr) {
+  if (!dtStr) return false;
+  const target = new Date(dtStr.replace(/-/g, '/'));
+  return new Date() > target;
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -74,7 +96,7 @@ export async function onRequest(context) {
     });
   }
 
-  // GET: 获取全网最新的授权码、激活用户、聚合订阅源与全站公告（前台依赖，保持兼容）
+  // GET: 获取全网最新的授权码、激活用户、聚合订阅源与全站公告
   if (request.method === 'GET') {
     let codes = await kv.get('hercinia_auth_codes', { type: 'json' });
     let users = await kv.get('hercinia_account_auth', { type: 'json' });
@@ -142,8 +164,122 @@ export async function onRequest(context) {
     }), { headers: withSecurityHeaders() });
   }
 
-  // POST: 站长新建/编辑/删除授权码、订阅聚合源、全站公告（严格执行 Bearer HMAC-Token 鉴权）
+  // POST 处理
   if (request.method === 'POST') {
+    let payload;
+    try {
+      payload = await request.json();
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid JSON payload' }), {
+        status: 400,
+        headers: withSecurityHeaders()
+      });
+    }
+
+    // ★ 关键通道：用户端公开原子核销授权码 (不需要管理员 Token)
+    if (payload && payload.type === 'activate_code') {
+      const accountEmail = (payload.account || '').trim();
+      const codeStr = (payload.code || '').trim();
+
+      if (!accountEmail || !codeStr) {
+        return new Response(JSON.stringify({ success: false, error: '账号或授权码不能为空！' }), {
+          status: 400,
+          headers: withSecurityHeaders()
+        });
+      }
+
+      let codes = (await kv.get('hercinia_auth_codes', { type: 'json' })) || [];
+      let users = (await kv.get('hercinia_account_auth', { type: 'json' })) || [];
+
+      // 1. 授权码匹配
+      const codeObj = codes.find(c => c.code && c.code.trim().toLowerCase() === codeStr.toLowerCase());
+      if (!codeObj) {
+        return new Response(JSON.stringify({ success: false, error: '授权码无效，请核对后重试！' }), {
+          status: 400,
+          headers: withSecurityHeaders()
+        });
+      }
+
+      // 2. 状态检查（是否已核销或作废）
+      if (codeObj.status === 1) {
+        return new Response(JSON.stringify({ success: false, error: '该授权码已被其他账号使用！' }), {
+          status: 400,
+          headers: withSecurityHeaders()
+        });
+      }
+      if (codeObj.status === 2) {
+        return new Response(JSON.stringify({ success: false, error: '该授权码已被管理员作废！' }), {
+          status: 400,
+          headers: withSecurityHeaders()
+        });
+      }
+      if (codeObj.status === 3 || isExpiredDateTime(codeObj.code_expire_time)) {
+        codeObj.status = 3;
+        await kv.put('hercinia_auth_codes', JSON.stringify(codes));
+        return new Response(JSON.stringify({ success: false, error: '该授权码已超过有效兑换期限，已失效！' }), {
+          status: 400,
+          headers: withSecurityHeaders()
+        });
+      }
+
+      // 3. 用户查找或新建
+      let accountObj = users.find(a => a.account && a.account.toLowerCase() === accountEmail.toLowerCase());
+      if (!accountObj) {
+        const newAccId = users.length > 0 ? Math.max(...users.map(a => a.id || 0)) + 1 : 1;
+        accountObj = {
+          id: newAccId,
+          account: accountEmail,
+          auth_expire_time: null,
+          last_auth_code: null,
+          used_trial: false
+        };
+        users.push(accountObj);
+      }
+
+      // 4. 体验码限制
+      if (codeObj.package_type === 'trial' && accountObj.used_trial) {
+        return new Response(JSON.stringify({ success: false, error: '该账号已享受过体验套餐，无法重复激活试用码！' }), {
+          status: 400,
+          headers: withSecurityHeaders()
+        });
+      }
+
+      // 5. 原子核销与时间顺延计算
+      const now = new Date();
+      const nowStr = formatDateTime(now);
+
+      codeObj.status = 1; // 标记已使用
+      codeObj.bind_account = accountEmail;
+      codeObj.activate_time = nowStr;
+
+      let currentExpiry = accountObj.auth_expire_time ? new Date(accountObj.auth_expire_time.replace(/-/g, '/')) : null;
+      let baseDate = (currentExpiry && currentExpiry > now) ? currentExpiry : new Date(now.getTime());
+      const packageDays = Number(codeObj.package_days) || 30;
+      baseDate.setDate(baseDate.getDate() + packageDays);
+
+      accountObj.auth_expire_time = formatDateTime(baseDate);
+      accountObj.last_auth_code = codeObj.code;
+      if (codeObj.package_type === 'trial') {
+        accountObj.used_trial = true;
+      }
+
+      // 6. 原子写入 KV，立即同步云端
+      await kv.put('hercinia_auth_codes', JSON.stringify(codes));
+      await kv.put('hercinia_account_auth', JSON.stringify(users));
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: '授权激活成功',
+        data: {
+          account: accountObj,
+          code: codeObj
+        }
+      }), {
+        headers: withSecurityHeaders()
+      });
+    }
+
+    // ★ 其余所有管理写入操作，必须验证管理员 HMAC 凭证
     const authHeader = request.headers.get('Authorization') || '';
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
     const adminSecret = (env.ADMIN_SECRET || 'hercinia_super_secure_hmac_secret_2026_default').trim();
@@ -157,7 +293,6 @@ export async function onRequest(context) {
     }
 
     try {
-      const payload = await request.json();
       const { type, data } = payload;
 
       if (type === 'save_codes' && Array.isArray(data)) {
