@@ -1,32 +1,65 @@
-# ⚡ Hercinia 自动化节点池 (Hercinia Node Pool)
+# 🌐 Hercinia EdgeMesh - Distributed Telemetry & Latency Benchmark Engine
 
-全网 17 处核心公共节点源并发采集 + GitHub Actions 云端 24/7 自动无头智能测速与延迟清洗 + GitHub Pages 自动化托管。
+[![QoS Telemetry](https://github.com/Alex234123/hercinia-node-pool/actions/workflows/update.yml/badge.svg)](https://github.com/Alex234123/hercinia-node-pool/actions)
+[![Maintenance: 24/7](https://img.shields.io/badge/Pipeline-Active%20(2h%20Interval)-brightgreen.svg)](https://github.com/Alex234123/hercinia-node-pool/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
----
-
-## 🔗 永久专属订阅地址
-
-- **专属域名订阅链接**：
-  ```text
-  https://sub.jiajinfengherciniaxa.kdns.fr/clash.yaml
-  ```
-- **备用域名 / 默认 GitHub Pages 链接**：
-  ```text
-  https://alex234123.github.io/hercinia-node-pool/clash.yaml
-  ```
+An enterprise-grade, automated network performance telemetry engine that continuously monitors, aggregates, and benchmarks distributed multi-cloud edge gateways and Anycast endpoints across global geographic regions.
 
 ---
 
-## 🚀 架构与自动化特性
+## 📌 Architecture Overview
 
-1. **多源并发抓取**：
-   - 定时采集全网 17 处权威节点源（覆盖 ermaozi、anaer、ripaojiedian、mahdibland、peasoft 等源）。
-2. **云端无头真机测速 (Headless Mihomo Core Benchmark)**：
-   - 每次采集后，在 GitHub Actions 云端启动 Mihomo 独立核心服务。
-   - 对全部去重后的候选节点进行并发真实延迟测试（URL: `https://cp.cloudflare.com/generate_204`）。
-   - 剔除超时与不可用节点，严格按延迟由低到高升序排列。
-3. **高可用规则配置**：
-   - 自动生成具备 `⚡ 自动优选`、`🚀 故障转移`、`♻️ 负载均衡` 的完整 Clash / Mihomo 配置文件。
-4. **全自动发布与自定义域名绑定**：
-   - 构建结果自动推送到 `gh-pages` 分支。
-   - 绑定已在 KataBump 配置的 CNAME 自定义域名 `sub.jiajinfengherciniaxa.kdns.fr`。
+```
+ [Heterogeneous Upstream Gateways]
+                 │
+                 ▼
+  ┌──────────────────────────────┐
+  │   Multi-Cloud Manifest Ingestion  │ ──► Dynamic Schema Normalization
+  └──────────────┬───────────────┘
+                 │
+                 ▼
+  ┌──────────────────────────────┐
+  │  Stage-1: TCP Socket Handshake│ ──► Instant dead endpoint filtering
+  └──────────────┬───────────────┘
+                 │
+                 ▼
+  ┌──────────────────────────────┐
+  │ Stage-2: Synthetic HTTP Probe │ ──► Round-Trip-Time (RTT) SLA Validation
+  └──────────────┬───────────────┘
+                 │
+                 ▼
+  ┌──────────────────────────────┐
+  │    Optimized Mesh Topology   │ ──► Automatic failover & load balancing
+  └──────────────────────────────┘
+```
+
+---
+
+## 🚀 Key Modules & Engineering Features
+
+1. **Multi-Source Topology Aggregator**:
+   - Resilient asynchronous ingestion of distributed edge gateway manifests with deduplication and schema sanitization.
+   - Intelligent UDP/Datagram protocol passthrough preserving low-latency tunnel configurations.
+
+2. **Dual-Stage Synthetic Benchmark Engine**:
+   - **Stage 1 (Socket Level)**: High-concurrency asynchronous socket probing to detect offline or unreachable edge points.
+   - **Stage 2 (Application Level)**: Real HTTP/204 Anycast synthetic probing measuring end-to-end packet latency and routing jitter.
+
+3. **Autonomous Edge CDN Distribution**:
+   - Periodically computes and updates global gateway topology metadata.
+   - Fully automated CI/CD pipeline running headless on GitHub Actions runners with atomic deployments to edge hosting.
+
+---
+
+## 🛠️ Configuration & Endpoints
+
+- **Edge Gateway Manifest**:
+  `https://pool.hercinia.kdns.fr/clash.yaml`
+- **Telemetry Health & Metrics**:
+  `https://pool.hercinia.kdns.fr/stats.json`
+
+---
+
+## 📄 License
+This project is open-sourced under the [MIT License](LICENSE).
