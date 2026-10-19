@@ -995,11 +995,11 @@ def build_final_subscription(alive_nodes_with_delay: list):
 
         f"# ===================================================================\n"
 
-        f"# Hercinia Cloud Auto-Tested Node Subscription Pool\n"
+        f"# Hercinia EdgeMesh - Distributed Telemetry Topology Manifest\n"
 
         f"# Updated: {cst_time} (UTC+8)\n"
 
-        f"# Verified Alive Nodes: {len(final_proxies)}\n"
+        f"# Active Edge Gateways: {len(final_proxies)}\n"
 
         f"# Custom Domain: https://{CUSTOM_DOMAIN}/clash.yaml\n"
 
@@ -1124,7 +1124,7 @@ async def main():
 
     print("=" * 60)
 
-    print("Hercinia Node Pool Scraper & Aggregator Started")
+    print("Hercinia EdgeMesh Telemetry & Topology Aggregator Started")
 
     print(f"Timestamp: {datetime.now(timezone.utc).isoformat()}")
 
