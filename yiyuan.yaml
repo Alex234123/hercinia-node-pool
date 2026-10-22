@@ -1,0 +1,23 @@
+port: 7890
+socks-port: 7891
+allow-lan: true
+mode: rule
+log-level: info
+
+proxies:
+  - { name: '一元 | 香港hytron-手机畅享01', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: 4x6inqp9sp.586668.xyz, skip-cert-verify: false }
+  - { name: '一元 | 香港hytron-手机畅享02', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: 0l6o-gl-83h.230888.xyz, skip-cert-verify: false }
+  - { name: '一元 | 香港hytron-手机畅享03', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: kbdx0bvfv.682003.xyz, skip-cert-verify: false }
+  - { name: '一元 | 香港hytron-手机畅享04', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: 81ws0mfijjiy4k.682009.xyz, skip-cert-verify: false }
+  - { name: '一元 | 香港hytron-手机畅享05', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: 1kq6dn2xriwryh4dum56.682010.xyz, skip-cert-verify: false }
+  - { name: '一元 | 香港hytron-手机畅享06', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: 5noyxnm3osla8pl-3.682011.xyz, skip-cert-verify: false }
+  - { name: '一元 | 香港hytron-手机畅享07', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: jqwga6-50344-5zqe9vh.682012.xyz, skip-cert-verify: false }
+  - { name: '一元 | 香港hytron-手机畅享08', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: 4-cv.682013.xyz, skip-cert-verify: false }
+  - { name: '一元 | 香港hytron-手机畅享09', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: xdyhnuo0h35nd3.682014.xyz, skip-cert-verify: false }
+  - { name: '一元 | 美西极速(移动专用)gemini', type: trojan, server: cmcf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: xctae7.682004.xyz, skip-cert-verify: false }
+  - { name: '一元 | 美西极速手机畅享(主力)', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: aktikv3x8nxffo.682004.xyz, skip-cert-verify: false }
+  - { name: '一元 | Scaleway荷兰极速手机畅享(主力)', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: tw6x.682008.xyz, skip-cert-verify: false }
+  - { name: '一元 | 美国洛杉矶LA-手机畅享(主力ovo)', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: jfxgexj7qoejox.682001.xyz, skip-cert-verify: false }
+  - { name: '一元 | 美国洛杉矶LA-手机畅享(主力qvq)', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: 1q8syazoe.682001.xyz, skip-cert-verify: false }
+  - { name: '一元 | 新加坡01-手机畅享', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: rvgp4l.682005.xyz, skip-cert-verify: false }
+  - { name: '一元 | 新加坡02-手机畅享', type: trojan, server: cf.622228.xyz, port: 443, password: 6e0adbc4-4a3e-433c-b4ed-3b838408417e, udp: true, network: ws, ws-opts: { path: /media }, sni: epblf2m3b-5o.682005.xyz, skip-cert-verify: false }
