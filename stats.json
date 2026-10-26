@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-10-26 17:36:00",
-  "total_alive_nodes": 1422,
-  "average_delay_ms": 722,
+  "updated_at": "2026-10-27 00:26:36",
+  "total_alive_nodes": 1330,
+  "average_delay_ms": 841,
   "custom_domain": "pool.hercinia.kdns.fr",
   "subscription_url": "https://pool.hercinia.kdns.fr/clash.yaml"
 }
